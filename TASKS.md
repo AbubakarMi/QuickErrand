@@ -29,12 +29,12 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done & verified
 
 - [x] 2.1 `src/lib/taskStatus.ts`, the single status-transition guard function (plan §4). Resolved an ambiguity between plan §3 ("poster can only cancel while PENDING") and §4's diagram (CANCELLED reachable from PENDING or ACCEPTED): poster cancels from PENDING, the assigned runner can back out from ACCEPTED, nobody cancels from IN_PROGRESS. Uses `updateMany` with a status guard in the `where` clause (not a plain `update`) so two concurrent transitions can't both win, e.g. two runners accepting the same task at once. Verified against the live Neon DB with a throwaway script exercising all 12 paths: every legal transition, every role/ownership rejection, the terminal-state rejection, and the concurrent-accept race (exactly one of two simultaneous accepts succeeds, the other gets a typed `TaskStatusError`, not a crash or silent double-assignment). Script and its test rows deleted after the run.
 - [x] 2.2 `POST /api/tasks` + `GET /api/tasks`. GET is role-branched rather than a generic filter API: USER gets their own posted tasks (any status), RUNNER gets the open PENDING pool with an optional `?category=` filter. Verified over real HTTP against the live Neon DB with logged-in sessions (one account seeded directly, one registered through the real form): unauthenticated GET returns 401, POST as USER creates and returns 201, POST as RUNNER is rejected with 403, POST with an empty title is rejected with 400 and the zod message, GET as USER returns only their task, GET as RUNNER returns the pool and correctly filters to empty for a non-matching category. Test accounts and tasks deleted after.
-- [ ] 2.3 `/user/tasks/new/page.tsx`, post-a-task form (title, description, category, location)
-- [ ] 2.4 `/user/dashboard/page.tsx`, list of own posted tasks with live status badges
-- [ ] 2.5 `/runner/dashboard/page.tsx`, browse `PENDING` tasks, filter by category
-- [ ] 2.6 `PATCH /api/tasks/[id]`, accept task (runner), routed through `updateTaskStatus()`
-- [ ] 2.7 User: cancel task action (only while `PENDING`), also through `updateTaskStatus()`
-- [ ] **Phase 2 complete**, a task can be posted, browsed, and accepted end-to-end through the real DB
+- [x] 2.3 `/user/tasks/new/page.tsx`, post-a-task form (title, description, category, location), client form posting to `/api/tasks`
+- [x] 2.4 `/user/dashboard/page.tsx`, list of own posted tasks with live status badges (`StatusBadge`, new shared component)
+- [x] 2.5 `/runner/dashboard/page.tsx`, browse `PENDING` tasks, filter by category via `CategoryFilter`
+- [x] 2.6 `GET` + `PATCH /api/tasks/[id]`, single-task fetch (poster or assigned runner only) and status update, routed through `updateTaskStatus()`
+- [x] 2.7 User: cancel task action (only while `PENDING`), also through `updateTaskStatus()`. 2.5, 2.6, and 2.7 were built and verified together, same as the Phase 1 auth batch, since browsing without an accept endpoint (or a cancel button without a PATCH route) can't be meaningfully tested in isolation. New shared `TaskStatusActionButton` drives both accept and cancel (and will drive the advance/complete actions in Phase 3).
+- [x] **Phase 2 complete**, verified over real HTTP against the live Neon DB with two logged-in sessions: posted two tasks as the requester, confirmed the runner's category filter correctly narrows the pool (both via the API and the rendered page), accepted one task (confirmed it leaves the pending pool, shows the runner's name and "Accepted" on the requester's dashboard, and its Cancel button disappears), cancelled the other while still pending. Build and lint clean. Test accounts and tasks deleted after.
 
 ## Phase 3: Tracking & Rating
 

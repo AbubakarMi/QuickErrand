@@ -12,3 +12,7 @@ export const CATEGORIES = [
 ] as const;
 
 export type CategoryValue = (typeof CATEGORIES)[number]["value"];
+
+export function categoryLabel(value: string): string {
+  return CATEGORIES.find((c) => c.value === value)?.label ?? value;
+}
