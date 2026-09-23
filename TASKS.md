@@ -27,18 +27,18 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done & verified
 
 ## Phase 2: Core Task Flow
 
-- [ ] 2.1 `lib/taskStatus.ts`, the single status-transition guard function (plan §4), unit-testable in isolation
-- [ ] 2.2 `POST /api/tasks` + `GET /api/tasks` (list/filter by status, category)
-- [ ] 2.3 `/(user)/tasks/new/page.tsx`, post-a-task form (title, description, category, location)
-- [ ] 2.4 `/(user)/dashboard/page.tsx`, list of own posted tasks with live status badges
-- [ ] 2.5 `/(runner)/dashboard/page.tsx`, browse `PENDING` tasks, filter by category
+- [x] 2.1 `src/lib/taskStatus.ts`, the single status-transition guard function (plan §4). Resolved an ambiguity between plan §3 ("poster can only cancel while PENDING") and §4's diagram (CANCELLED reachable from PENDING or ACCEPTED): poster cancels from PENDING, the assigned runner can back out from ACCEPTED, nobody cancels from IN_PROGRESS. Uses `updateMany` with a status guard in the `where` clause (not a plain `update`) so two concurrent transitions can't both win, e.g. two runners accepting the same task at once. Verified against the live Neon DB with a throwaway script exercising all 12 paths: every legal transition, every role/ownership rejection, the terminal-state rejection, and the concurrent-accept race (exactly one of two simultaneous accepts succeeds, the other gets a typed `TaskStatusError`, not a crash or silent double-assignment). Script and its test rows deleted after the run.
+- [x] 2.2 `POST /api/tasks` + `GET /api/tasks`. GET is role-branched rather than a generic filter API: USER gets their own posted tasks (any status), RUNNER gets the open PENDING pool with an optional `?category=` filter. Verified over real HTTP against the live Neon DB with logged-in sessions (one account seeded directly, one registered through the real form): unauthenticated GET returns 401, POST as USER creates and returns 201, POST as RUNNER is rejected with 403, POST with an empty title is rejected with 400 and the zod message, GET as USER returns only their task, GET as RUNNER returns the pool and correctly filters to empty for a non-matching category. Test accounts and tasks deleted after.
+- [ ] 2.3 `/user/tasks/new/page.tsx`, post-a-task form (title, description, category, location)
+- [ ] 2.4 `/user/dashboard/page.tsx`, list of own posted tasks with live status badges
+- [ ] 2.5 `/runner/dashboard/page.tsx`, browse `PENDING` tasks, filter by category
 - [ ] 2.6 `PATCH /api/tasks/[id]`, accept task (runner), routed through `updateTaskStatus()`
 - [ ] 2.7 User: cancel task action (only while `PENDING`), also through `updateTaskStatus()`
 - [ ] **Phase 2 complete**, a task can be posted, browsed, and accepted end-to-end through the real DB
 
 ## Phase 3: Tracking & Rating
 
-- [ ] 3.1 `/(runner)/tasks/[id]/page.tsx`, task detail + status update controls (`ACCEPTED → IN_PROGRESS → COMPLETED`)
+- [ ] 3.1 `/runner/tasks/[id]/page.tsx`, task detail + status update controls (`ACCEPTED → IN_PROGRESS → COMPLETED`)
 - [ ] 3.2 Client-side polling (5–10s) on task detail views while task is open
 - [ ] 3.3 `POST /api/tasks/[id]/rate` + rating form shown to poster after `COMPLETED`
 - [ ] 3.4 Average rating computed and shown on runner profile/dashboard
@@ -46,7 +46,7 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done & verified
 
 ## Phase 4: Polish & Deploy
 
-- [ ] 4.1 `/(admin)/dashboard/page.tsx`, read-only users + tasks overview
+- [ ] 4.1 `/admin/dashboard/page.tsx` (already a shell from Phase 1), read-only users + tasks overview
 - [ ] 4.2 Admin: deactivate-user boolean flag (stretch, optional)
 - [ ] 4.3 Error handling + form validation (zod) across all mutating routes
 - [ ] 4.4 Empty states, loading states, and responsive pass across all pages
