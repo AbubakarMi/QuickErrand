@@ -1,0 +1,101 @@
+// QuickErrand database schema.
+// Four models, two enums — see "QuickErrand Implementation Plan.md" §2 for
+// the reasoning. Resist the urge to add fields "while we're in here"; every
+// addition here is a migration and a decision, not a free action.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Prisma 7 no longer takes the connection URL here — it's read from
+// prisma.config.ts (CLI) and passed to PrismaClient via a driver adapter
+// at runtime (lib/prisma.ts). See CLAUDE.md for why.
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  phone        String?
+  role         Role     @default(USER)
+  createdAt    DateTime @default(now())
+
+  // Runner-only fields — left null for USER/ADMIN accounts rather than
+  // split into a separate RunnerProfile table. A single account can only
+  // hold one role (see plan §1), so there's no join to normalize away.
+  category    Category?
+  bio         String?
+  isAvailable Boolean   @default(true)
+
+  tasksPosted     Task[]   @relation("PostedTasks")
+  tasksRunning    Task[]   @relation("RunnerTasks")
+  ratingsGiven    Rating[] @relation("RatingsGiven")
+  ratingsReceived Rating[] @relation("RatingsReceived")
+}
+
+enum Role {
+  USER
+  RUNNER
+  ADMIN
+}
+
+enum Category {
+  GENERAL_ERRAND
+  PLUMBING
+  CARPENTRY
+  ELECTRICAL
+  CLEANING
+  OTHER
+}
+
+model Task {
+  id          String     @id @default(cuid())
+  title       String
+  description String
+  category    Category
+  location    String
+  status      TaskStatus @default(PENDING)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  posterId String
+  poster   User   @relation("PostedTasks", fields: [posterId], references: [id])
+
+  runnerId String?
+  runner   User?   @relation("RunnerTasks", fields: [runnerId], references: [id])
+
+  rating Rating?
+
+  @@index([status])
+  @@index([category])
+}
+
+// PENDING -> ACCEPTED -> IN_PROGRESS -> COMPLETED, with CANCELLED reachable
+// only from PENDING or ACCEPTED. The only place that may write this field
+// is updateTaskStatus() in lib/taskStatus.ts — see CLAUDE.md.
+enum TaskStatus {
+  PENDING
+  ACCEPTED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+model Rating {
+  id        String   @id @default(cuid())
+  score     Int // 1-5, enforced at the API boundary, not the DB
+  comment   String?
+  createdAt DateTime @default(now())
+
+  taskId String @unique
+  task   Task   @relation(fields: [taskId], references: [id])
+
+  ratedById String
+  ratedBy   User   @relation("RatingsGiven", fields: [ratedById], references: [id])
+
+  ratedUserId String
+  ratedUser   User   @relation("RatingsReceived", fields: [ratedUserId], references: [id])
+}

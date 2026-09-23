@@ -1,0 +1,237 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * Design tokens for QuickErrand. These map the semantic names shadcn/ui
+ * components expect (--background, --primary, etc.) onto the brand
+ * palette defined in CLAUDE.md, plus a handful of QuickErrand-specific
+ * tokens (brand-coral, status-*) that no shadcn component knows about but
+ * our own components (status badges, CTAs) reach for directly.
+ */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+  --font-heading: var(--font-heading);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+
+  /* QuickErrand-only tokens, not part of the shadcn semantic set */
+  --color-brand-coral: var(--brand-coral);
+  --color-brand-coral-foreground: var(--brand-coral-foreground);
+  --color-status-pending: var(--status-pending);
+  --color-status-accepted: var(--status-accepted);
+  --color-status-in-progress: var(--status-in-progress);
+  --color-status-completed: var(--status-completed);
+  --color-status-cancelled: var(--status-cancelled);
+}
+
+:root {
+  --background: #f8f7f5;
+  --foreground: #1c1b1a;
+  --card: #ffffff;
+  --card-foreground: #1c1b1a;
+  --popover: #ffffff;
+  --popover-foreground: #1c1b1a;
+
+  /* Errand Teal, the brand color */
+  --primary: #148b79;
+  --primary-foreground: #f3fbf9;
+
+  --secondary: #f1efea;
+  --secondary-foreground: #1c1b1a;
+  --muted: #eeebe6;
+  --muted-foreground: #6b6862;
+
+  /* Light teal tint, used for hovers/selected rows, not the CTA color */
+  --accent: #d3f7ee;
+  --accent-foreground: #12594f;
+
+  --destructive: #c6472c;
+  --border: #e4e0d8;
+  --input: #e4e0d8;
+  --ring: #1cae96;
+
+  --chart-1: #3bcbb0;
+  --chart-2: #ff6b4a;
+  --chart-3: #126f62;
+  --chart-4: #d99a3d;
+  --chart-5: #1c1b1a;
+
+  --radius: 0.625rem;
+
+  --sidebar: #f1efea;
+  --sidebar-foreground: #1c1b1a;
+  --sidebar-primary: #148b79;
+  --sidebar-primary-foreground: #f3fbf9;
+  --sidebar-accent: #d3f7ee;
+  --sidebar-accent-foreground: #12594f;
+  --sidebar-border: #e4e0d8;
+  --sidebar-ring: #1cae96;
+
+  /* Signal Coral, used sparingly, for primary CTAs and urgency */
+  --brand-coral: #ff6b4a;
+  --brand-coral-foreground: #2b0f08;
+
+  /* Task lifecycle colors, deliberately not generic red/yellow/green */
+  --status-pending: #d99a3d;
+  --status-accepted: #3bcbb0;
+  --status-in-progress: #148b79;
+  --status-completed: #2f6b4e;
+  --status-cancelled: #8f897d;
+}
+
+.dark {
+  --background: #15140f;
+  --foreground: #f3f1ec;
+  --card: #1d1c18;
+  --card-foreground: #f3f1ec;
+  --popover: #1d1c18;
+  --popover-foreground: #f3f1ec;
+
+  --primary: #3bcbb0;
+  --primary-foreground: #0b241f;
+
+  --secondary: #201f1b;
+  --secondary-foreground: #f3f1ec;
+  --muted: #201f1b;
+  --muted-foreground: #a39e93;
+
+  --accent: #17332d;
+  --accent-foreground: #a6eede;
+
+  --destructive: #e5675a;
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: #3bcbb0;
+
+  --chart-1: #3bcbb0;
+  --chart-2: #ff6b4a;
+  --chart-3: #6fe0ca;
+  --chart-4: #d99a3d;
+  --chart-5: #f3f1ec;
+
+  --sidebar: #1d1c18;
+  --sidebar-foreground: #f3f1ec;
+  --sidebar-primary: #3bcbb0;
+  --sidebar-primary-foreground: #0b241f;
+  --sidebar-accent: #17332d;
+  --sidebar-accent-foreground: #a6eede;
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: #3bcbb0;
+
+  --brand-coral: #ff8064;
+  --brand-coral-foreground: #2b0f08;
+
+  --status-pending: #e0ac5c;
+  --status-accepted: #3bcbb0;
+  --status-in-progress: #6fe0ca;
+  --status-completed: #6fa588;
+  --status-cancelled: #7a7468;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-heading;
+  }
+}
+
+@layer components {
+  /* Plain text/email/password/select inputs across auth + task forms.
+     shadcn's Input component is for its own form primitives. This is a
+     lighter-weight class for native elements we don't need Base UI for. */
+  .input {
+    @apply h-10 w-full rounded-lg border border-input bg-card px-3 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30;
+  }
+}
+
+/* Hero gradient field: two slow-drifting blurred color fields behind the
+   landing page hero. Plain CSS, not motion/react, so it costs nothing on
+   the JS thread and keeps running smoothly regardless of React re-renders. */
+@keyframes drift-a {
+  0%, 100% { transform: translate(-8%, -6%) scale(1); }
+  50% { transform: translate(6%, 4%) scale(1.15); }
+}
+@keyframes drift-b {
+  0%, 100% { transform: translate(4%, 6%) scale(1.1); }
+  50% { transform: translate(-6%, -4%) scale(1); }
+}
+.hero-blob-a {
+  animation: drift-a 22s ease-in-out infinite;
+}
+.hero-blob-b {
+  animation: drift-b 26s ease-in-out infinite;
+}
+
+/* Infinite horizontal ticker. Duplicating the track content and sliding by
+   exactly -50% is what makes the loop seamless. */
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+.marquee-track {
+  animation: marquee 32s linear infinite;
+}
+.marquee-track:hover {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-blob-a,
+  .hero-blob-b,
+  .marquee-track {
+    animation: none;
+  }
+}
