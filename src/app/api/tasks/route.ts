@@ -1,15 +1,22 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getServerSession } from "next-auth";
 import { z } from "zod";
-import { Category } from "@prisma/client";
+import { Category, PaymentMethod } from "@prisma/client";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { presentPoolTask, runnerPoolWhere } from "@/lib/runnerPool";
 
 const createTaskSchema = z.object({
   title: z.string().trim().min(1, "Title is required").max(120),
   description: z.string().trim().min(1, "Description is required").max(2000),
   category: z.enum(Category),
   location: z.string().trim().min(1, "Location is required").max(200),
+  // Coordination only, not a transaction, see CLAUDE.md and TASKS.md 3.6.
+  price: z.coerce
+    .number({ error: "Enter a price" })
+    .int("Price must be a whole number")
+    .positive("Price must be greater than zero"),
+  paymentMethod: z.enum(PaymentMethod),
 });
 
 // What GET returns depends on who's asking, not on a query param, since
@@ -39,12 +46,14 @@ export async function GET(request: NextRequest) {
         ? (categoryParam as Category)
         : undefined;
 
-    const tasks = await prisma.task.findMany({
-      where: { status: "PENDING", ...(category ? { category } : {}) },
+    const rows = await prisma.task.findMany({
+      where: runnerPoolWhere(session.user.id, category),
       orderBy: { createdAt: "desc" },
-      include: { poster: { select: { id: true, name: true } } },
+      include: { poster: { select: { name: true } } },
     });
-    return NextResponse.json({ tasks });
+    return NextResponse.json({
+      tasks: rows.map((row) => presentPoolTask(row, session.user.id)),
+    });
   }
 
   return NextResponse.json(

@@ -1,6 +1,4 @@
-import { redirect } from "next/navigation";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { requireRole } from "@/lib/requireRole";
 import { RoleShell } from "@/components/role-shell";
 
 export default async function AdminLayout({
@@ -8,9 +6,7 @@ export default async function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const session = await getServerSession(authOptions);
-  if (!session) redirect("/login");
-  if (session.user.role !== "ADMIN") redirect("/post-login");
+  const session = await requireRole("ADMIN");
 
   return (
     <RoleShell role="ADMIN" userName={session.user.name ?? session.user.email ?? ""}>

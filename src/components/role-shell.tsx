@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Role } from "@prisma/client";
 import { SignOutButton } from "@/components/sign-out-button";
+import { NotificationBell } from "@/components/notification-bell";
 
 const ROLE_LABEL: Record<Role, string> = {
   USER: "Requester",
@@ -15,10 +16,12 @@ const ROLE_LABEL: Record<Role, string> = {
 export function RoleShell({
   role,
   userName,
+  nav = [],
   children,
 }: {
   role: Role;
   userName: string;
+  nav?: { href: string; label: string }[];
   children: React.ReactNode;
 }) {
   return (
@@ -30,7 +33,19 @@ export function RoleShell({
         >
           Quick<span className="text-primary">Errand</span>
         </Link>
+        <nav className="ml-6 mr-auto flex items-center gap-1">
+          {nav.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className="rounded-md px-2.5 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            >
+              {item.label}
+            </Link>
+          ))}
+        </nav>
         <div className="flex items-center gap-4">
+          {role !== "ADMIN" && <NotificationBell />}
           <span className="hidden text-sm text-muted-foreground sm:inline">
             {userName}
           </span>

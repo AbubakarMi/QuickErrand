@@ -1,5 +1,5 @@
 // QuickErrand database schema.
-// Four models, two enums — see "QuickErrand Implementation Plan.md" §2 for
+// Four models, two enums, see "QuickErrand Implementation Plan.md" §2 for
 // the reasoning. Resist the urge to add fields "while we're in here"; every
 // addition here is a migration and a decision, not a free action.
 
@@ -7,7 +7,7 @@ generator client {
   provider = "prisma-client-js"
 }
 
-// Prisma 7 no longer takes the connection URL here — it's read from
+// Prisma 7 no longer takes the connection URL here, it's read from
 // prisma.config.ts (CLI) and passed to PrismaClient via a driver adapter
 // at runtime (lib/prisma.ts). See CLAUDE.md for why.
 datasource db {
@@ -23,17 +23,24 @@ model User {
   role         Role     @default(USER)
   createdAt    DateTime @default(now())
 
-  // Runner-only fields — left null for USER/ADMIN accounts rather than
+  // Runner-only fields, left null for USER/ADMIN accounts rather than
   // split into a separate RunnerProfile table. A single account can only
   // hold one role (see plan §1), so there's no join to normalize away.
   category    Category?
   bio         String?
   isAvailable Boolean   @default(true)
 
-  tasksPosted     Task[]   @relation("PostedTasks")
-  tasksRunning    Task[]   @relation("RunnerTasks")
-  ratingsGiven    Rating[] @relation("RatingsGiven")
-  ratingsReceived Rating[] @relation("RatingsReceived")
+  // A runner's payout details for BANK_TRANSFER tasks, set once and reused
+  // across every task rather than re-entered each time. Purely
+  // informational, see Task.paidAt below, nothing here moves money.
+  bankAccountNumber String?
+  bankName          String?
+
+  tasksPosted      Task[]   @relation("PostedTasks")
+  tasksRunning     Task[]   @relation("RunnerTasks")
+  negotiationsMade Task[]   @relation("NegotiationOffers")
+  ratingsGiven     Rating[] @relation("RatingsGiven")
+  ratingsReceived  Rating[] @relation("RatingsReceived")
 }
 
 enum Role {
@@ -67,15 +74,50 @@ model Task {
   runnerId String?
   runner   User?   @relation("RunnerTasks", fields: [runnerId], references: [id])
 
+  // Coordination only, never a transaction, see CLAUDE.md and TASKS.md
+  // 3.6 for the scope boundary. `price` is the poster's stated asking
+  // price; nothing computes or moves it. `paidAt`/`paymentConfirmedAt` are
+  // a two-step record (poster marks paid, then runner confirms receipt),
+  // not a payment flow.
+  price         Int
+  paymentMethod PaymentMethod
+
+  paidAt             DateTime?
+  paymentConfirmedAt DateTime?
+
+  // A runner's single active counter-offer, made instead of accepting
+  // outright. One price is on the table at a time and the two sides can go back and
+  // forth (see 3.9 and 3.16). Once the poster
+  // agrees, `offerAgreedAt` is set and the errand is reserved for that
+  // runner (off the open pool) until they confirm with a normal accept,
+  // which is where bank details get required, or release it.
+  negotiatedPrice      Int?
+  negotiatedByRunnerId String?
+  negotiatedByRunner   User?   @relation("NegotiationOffers", fields: [negotiatedByRunnerId], references: [id])
+  // Whose turn it isn't: who made the price currently on the table. The
+  // other side responds. Either side can counter, so this flips.
+  offerBy              OfferSide?
+  offerAgreedAt        DateTime?
+
   rating Rating?
 
   @@index([status])
   @@index([category])
 }
 
+enum OfferSide {
+  RUNNER
+  POSTER
+}
+
+enum PaymentMethod {
+  CASH
+  BANK_TRANSFER
+}
+
 // PENDING -> ACCEPTED -> IN_PROGRESS -> COMPLETED, with CANCELLED reachable
 // only from PENDING or ACCEPTED. The only place that may write this field
-// is updateTaskStatus() in lib/taskStatus.ts — see CLAUDE.md.
+// is updateTaskStatus() in lib/taskStatus.ts, see CLAUDE.md.
 enum TaskStatus {
   PENDING
   ACCEPTED

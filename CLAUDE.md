@@ -78,9 +78,14 @@ verification.
 - **shadcn/ui** on top of **Base UI primitives** (the `@base-ui/react` package
   shadcn now scaffolds by default, not Radix) for accessible, composable
   components (dialogs, dropdowns, forms, toasts), never hand-roll a component
-  shadcn already solves well. **Composition prop is `render`, not `asChild`**, e.g. `<Button render={<Link href="/x" />}>Text</Button>`, not
-  `<Button asChild><Link>Text</Link></Button>`. This trips up anyone used to
-  older shadcn/Radix docs, so don't "fix" it back to `asChild`.
+  shadcn already solves well. **For links that should look like buttons, use `<Link
+  className={buttonVariants({ variant, size })}>`, not `<Button render={<Link
+  />}>`.** Base UI's `Button` assumes a native `<button>`: with `render` it
+  logs a `nativeButton` console error, and silencing that with
+  `nativeButton={false}` makes it stamp `role="button"` on the anchor, so
+  screen readers announce navigation as buttons. `Button` itself is for
+  real buttons only. (Base UI's composition prop is `render`, not Radix's
+  `asChild`; don't "fix" it back to `asChild`.)
 - **lucide-react** for icons
 - **`motion`** (the current name for Framer Motion, imported from `motion/react`)
   for entrance/transition animation, landing page hero, the errand-status
@@ -142,7 +147,9 @@ redo it.
   a PR: short, dry, exactly as long as the situation requires and no longer.
 - **One status guard function.** All task-status transitions go through the
   single `updateTaskStatus()` function described in the plan (§4). Nothing
-  else in the codebase mutates `Task.status` directly.
+  else in the codebase mutates `Task.status` directly. Negotiation
+  (`taskNegotiation.ts`) and the paid record (`taskPayment.ts`) are
+  separate guards precisely because they never write status.
 - **No premature abstraction.** Three similar lines beat a speculative helper.
   Don't build a plugin system, a generic "service layer," or config-driven
   behavior for things that have exactly one implementation.
@@ -164,7 +171,14 @@ redo it.
 ## What not to do
 
 - Don't add payments, wallets, native mobile, or AI-based matching, these
-  are explicitly out of scope (plan §8).
+  are explicitly out of scope (plan §8). The price, payment method, bank
+  details, and mark-paid / confirm-received fields are *not* payments: they
+  are a record of an off-platform transfer the user asked for (TASKS.md
+  3.6). Nothing may move, hold, or verify money. Don't remove them as
+  "payments", and don't grow them into a real payment flow.
+- Signed-in users must never see the guest pages, and signed-out users
+  never the role areas. That rule lives in `src/proxy.ts`. Don't add a
+  link that expects a signed-in user to land on `/`, it will redirect them.
 - Don't introduce a state-management library (Redux/Zustand/etc.), App
   Router server state + minimal client state doesn't need one at this scale.
 - Don't silently reorder or skip phases in `TASKS.md` to work on something

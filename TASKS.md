@@ -34,15 +34,238 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done & verified
 - [x] 2.5 `/runner/dashboard/page.tsx`, browse `PENDING` tasks, filter by category via `CategoryFilter`
 - [x] 2.6 `GET` + `PATCH /api/tasks/[id]`, single-task fetch (poster or assigned runner only) and status update, routed through `updateTaskStatus()`
 - [x] 2.7 User: cancel task action (only while `PENDING`), also through `updateTaskStatus()`. 2.5, 2.6, and 2.7 were built and verified together, same as the Phase 1 auth batch, since browsing without an accept endpoint (or a cancel button without a PATCH route) can't be meaningfully tested in isolation. New shared `TaskStatusActionButton` drives both accept and cancel (and will drive the advance/complete actions in Phase 3).
-- [x] **Phase 2 complete**, verified over real HTTP against the live Neon DB with two logged-in sessions: posted two tasks as the requester, confirmed the runner's category filter correctly narrows the pool (both via the API and the rendered page), accepted one task (confirmed it leaves the pending pool, shows the runner's name and "Accepted" on the requester's dashboard, and its Cancel button disappears), cancelled the other while still pending. Build and lint clean. Test accounts and tasks deleted after.
+- [x] 2.8 Surface a runner's own category as primary, without hiding or blocking anything else. Revised after discussion: a hard restriction (runner literally cannot see or accept out-of-category tasks) is the wrong model, real errand marketplaces let a runner take on adjacent work if they choose to, it's their call. `/runner/dashboard` now fetches the runner's own `category` alongside the (unchanged) task query and does a stable sort in JS: matching-category tasks first, everything else after in the same createdAt-desc order it already had, plus a small "Your specialty" badge on the matches. No change to `updateTaskStatus()` or the tasks API, accepting any `PENDING` task, in or out of category, stays a plain role check, so this carries no risk to anything Phase 2 already verified. Verified against the live Neon DB: seeded one plumbing, one electrical, one cleaning task for a plumbing-specialist runner, confirmed the plumbing task rendered first with the badge (and only it had the badge) while the other two kept their relative recency order, then confirmed accepting the electrical (out-of-category) task still succeeded with a 200. Test data deleted after.
+- [x] **Phase 2 complete**. Verified over real HTTP against the live Neon DB with two logged-in sessions: posted two tasks as the requester, confirmed the category filter correctly narrows the pool (both via the API and the rendered page), accepted one task (confirmed it leaves the pending pool, shows the runner's name and "Accepted" on the requester's dashboard, and its Cancel button disappears), cancelled the other while still pending. Build and lint clean. 2.8 is additive polish on top of an already-complete phase, not a blocker.
 
 ## Phase 3: Tracking & Rating
 
-- [ ] 3.1 `/runner/tasks/[id]/page.tsx`, task detail + status update controls (`ACCEPTED → IN_PROGRESS → COMPLETED`)
-- [ ] 3.2 Client-side polling (5–10s) on task detail views while task is open
-- [ ] 3.3 `POST /api/tasks/[id]/rate` + rating form shown to poster after `COMPLETED`
-- [ ] 3.4 Average rating computed and shown on runner profile/dashboard
-- [ ] **Phase 3 complete**, full lifecycle demoable: post → accept → progress → complete → rate
+Expanded per user feedback (a "searching for a runner" state for the poster,
+detail pages for both sides, a live-polling mode for the runner dashboard).
+**Judgment call, flagged rather than silently decided:** the request also
+described something closer to "runner requests it, poster confirms, then
+it locks." That's a different matching model than the plan specifies, the
+plan's §8 explicitly scopes matching down to "browse and accept, not
+automated assignment," and it's what 2.1/2.2/2.6 already built and verified
+(first runner to accept is atomically assigned, instantly removed from the
+pool). Keeping the atomic-accept model and reading the rest of that request
+as "the poster should be able to see who has it, and it should already be
+off the market," which is true today. If an actual two-sided
+confirm-before-lock flow is wanted, flag it back and it becomes its own
+task, it's a real data-model change (something has to represent "requested
+but not yet assigned"), not a small addition.
+
+- [x] 3.1 `/user/tasks/[id]/page.tsx`, poster's task detail: full task info,
+  `SearchingIndicator` (pulsing radar rings, new shared component, respects
+  `useReducedMotion`) while `PENDING`, the assigned runner's name + phone
+  via `ContactCard` once accepted, cancel button while still `PENDING`
+- [x] 3.2 `/runner/tasks/[id]/page.tsx`, runner's task detail: full task info,
+  the poster's name + phone via `ContactCard`, status controls (`ACCEPTED →
+  IN_PROGRESS → COMPLETED`, plus "back out" from `ACCEPTED`) via the
+  existing `TaskStatusActionButton`. Also previewable by any runner while
+  the task is still `PENDING` (that's what browsing is), but the poster's
+  contact stays hidden until someone is actually assigned, **caught and
+  fixed a real leak here**: the first draft of `GET /api/tasks/[id]` and
+  this page's initial server fetch both included the phone number
+  regardless of entitlement, relying on the page to just not render it,
+  the API response (and the client-side props payload, which serializes
+  regardless of what's rendered) doesn't work that way. Both now mask
+  `poster.phone` to `null` server-side unless the requester is the poster
+  or the assigned runner.
+- [x] 3.3 Linked both dashboards' list rows to their respective detail pages
+- [x] 3.4 Client-side polling (6s) on both detail pages while a task is still
+  open (`PENDING`/`ACCEPTED`/`IN_PROGRESS`), stops on its own once
+  `COMPLETED`/`CANCELLED`, so a status change made by the other party shows
+  up without a manual refresh
+- [x] 3.5 Runner dashboard "go live" mode (`LiveTaskFeed`): a toggle button
+  that starts polling `GET /api/tasks` every 6s, shows a pulsing "watching
+  live" indicator, and animates arrivals/departures with `AnimatePresence`
+  + `layout` (still specialty-sorted via the new shared
+  `sortTasksBySpecialty()`, used both here and in the initial server
+  render so the two stay consistent). Off by default, current
+  server-rendered list unchanged when it's off. Local list state
+  re-syncs off the server-provided list whenever it changes (category
+  filter navigation, or `router.refresh()` after an accept) using React's
+  documented "adjust state during render" pattern rather than a `useEffect`
+  (the effect version cascades an extra render and the lint rule flags it).
+  - Verified over real HTTP against the live Neon DB (couldn't verify the
+    client-side polling loop or its animations directly, that needs an
+    actual browser with JS running, none is attached in this environment):
+    posted a task, confirmed the poster's detail page shows the searching
+    state and no phone; confirmed a previewing runner's `GET
+    /api/tasks/:id` response has `poster.phone: null`; accepted it and
+    confirmed both detail pages now show the correct `ContactCard` with
+    the real phone number; advanced `ACCEPTED → IN_PROGRESS`, confirmed
+    the button set changed to "Mark complete", advanced to `COMPLETED`;
+    confirmed both dashboards' rows link to the right detail page.
+    Build and lint clean. Test accounts and tasks deleted after.
+Further expansion, per user request: price, payment coordination,
+negotiation, and history/earnings. **Explicit scope boundary, confirmed
+with the user:** no payment processing, ever, nothing moves money and
+nothing will. The plan's §8 already ruled this out ("no in-app payments or
+wallet") and that stands. What this actually is: a price the poster
+states, a payment method (cash or bank transfer), the runner's account
+number visible to the poster once assigned for an off-platform transfer
+(same "reveal contact info only once entitled" pattern as phone numbers),
+and a two-step **record**, poster marks it paid after paying off-platform,
+runner confirms they received it. Two booleans with timestamps, not a
+transaction. Also scoped down on request: "negotiation" is one structured
+counter-offer, not an open-ended chat/multi-round thread, that's a
+materially bigger feature (a real message thread model) and can become its
+own task if actually wanted after trying this.
+
+- [x] 3.6 Schema: add `price` (`Int`, whole currency units, no
+  multi-currency or decimals, there's no real transaction to be precise
+  about) and `paymentMethod` (new enum `CASH | BANK_TRANSFER`) to `Task`,
+  both set by the poster at creation. Add `paidAt` / `paymentConfirmedAt`
+  (nullable `DateTime`s) to `Task` for the mark-paid / confirm-received
+  record. Add `bankAccountNumber` / `bankName` (nullable strings) to
+  `User`, a runner's own payout details, set once and reused across tasks
+  rather than re-entered every time.
+- [x] 3.7 Post-a-task form: price input + payment method choice; task detail
+  pages and dashboard rows show both.
+- [x] 3.8 Bank details: a runner is prompted to add theirs (if missing) when
+  accepting a `BANK_TRANSFER` task; visible to the poster on the task
+  detail page via `ContactCard`, once assigned, exactly like the phone
+  number already works. Never shown for `CASH` tasks, there's nothing to
+  show.
+- [x] 3.9 Price negotiation (single counter-offer, see the scope note above):
+  a runner can propose one counter-price instead of accepting outright,
+  while the task is still `PENDING`. The poster sees it (via the existing
+  6s poll on the detail page, "live" the same way status already is) and
+  can accept it (finalizes the task to that runner at that price, through
+  the same concurrency-safe atomic assignment `updateTaskStatus()` already
+  uses for a normal accept) or decline it (clears the offer, task stays
+  open at the original price for anyone, including that same runner
+  deciding to accept at the original price instead).
+- [x] 3.10 Mark-paid / confirm-received record, new guard functions
+  (`src/lib/taskPayment.ts`, same single-guard-function discipline as
+  `taskStatus.ts`): once a task is `COMPLETED`, the poster can mark it paid
+  (sets `paidAt`), then the assigned runner can confirm they received it
+  (sets `paymentConfirmedAt`, only allowed once `paidAt` is already set).
+  Shown on both detail pages as a small two-step record, not a payment
+  flow, no amount changes hands inside the app.
+- [x] 3.11 Runner "My earnings": history of completed runs, total earned
+  (and how much of that is payment-confirmed vs. still awaiting it).
+- [x] 3.12 Poster's errand history: every posted errand regardless of
+  status, total spent on the completed ones.
+  - Done and verified over real HTTP against the live Neon DB (build and
+    lint clean, test data deleted). Details worth knowing:
+    - 3.6/3.7: `price` and `paymentMethod` on `Task`, both required, set in
+      the post form; the API rejects a missing price with "Enter a price".
+      `formatPrice()` prints a plain comma-separated number with no
+      currency symbol, on purpose.
+    - 3.8: bank details are enforced in `updateTaskStatus()`, not just the
+      accept button (a hand-built PATCH used to be able to assign a runner
+      the poster couldn't pay). Same rule on `proposeCounterOffer()`.
+      Bank details only ever reach the poster, and only via the assigned
+      runner's `ContactCard`.
+    - 3.9: `acceptCounterOffer()` lives in `taskStatus.ts` (it writes
+      status, and that file is the only place allowed to), propose/decline
+      in `taskNegotiation.ts`. The poster's accept sends the price it was
+      looking at and the server refuses on mismatch, so a runner replacing
+      their offer mid-click can't get the wrong price or runner assigned.
+      Other runners get `negotiatedPrice`, `negotiatedByRunnerId`, and
+      `negotiatedByRunner` masked to null in both the API and the page
+      props. A plain accept clears any pending offer.
+    - 3.10: `taskPayment.ts`, `PATCH /api/tasks/[id]/payment`. Poster only
+      for mark-paid (needs `COMPLETED`), assigned runner only for
+      confirm-received (needs `paidAt` first), each settable once. Detail
+      pages keep polling a `COMPLETED` errand until the record is finished.
+    - 3.11/3.12: `/runner/earnings` and `/user/history`, with totals
+      derived from `paidAt`/`paymentConfirmedAt`. Added nav links to
+      `RoleShell` (there were none) so they're reachable.
+    - Not verified: the client-side UI interactions themselves (button
+      clicks, the inline bank-details form, live polling repaint), no
+      browser attached here. The pages render the right server-side
+      content and every endpoint they call is verified.
+    - Known simplification: the earnings/history lists order by
+      `updatedAt` since there's no `completedAt` column; ordering shifts
+      slightly when a payment step updates the row.
+- [x] 3.15 Follow-up to 3.6 to 3.12, from user feedback. Verified over real
+  HTTP against the live Neon DB (two runners, one poster), build and lint
+  clean, test data deleted.
+  - **Live mode is a page**, `/runner/live`: a `BroadcastHeader` (rings
+    pinging outward from a radio icon, reduced-motion safe) over the same
+    `LiveTaskFeed` in `live` mode, polling every 4s and tagging errands that
+    arrived after the page opened as "New". The dashboard's toggle is now a
+    "Go live" link into it.
+  - **Backing out**: the errand still goes `CANCELLED` (as asked), but the
+    poster is now told why. A poster can only cancel while `PENDING` (no
+    runner yet), so a cancelled errand that has a runner means the runner
+    backed out, no new column needed. The poster sees "{name} backed out"
+    with a "Post it again" link, the dashboard row says so too, and a
+    cancelled errand no longer exposes either side's phone or bank details
+    (API and page props both).
+  - **Account number only when the runner accepts the price.** Making an
+    offer no longer needs bank details. To make that coherent the
+    negotiation is now three steps: runner offers, poster *agrees* (new
+    `offerAgreedAt` column), runner *confirms* with a normal accept. Agreeing
+    reserves the errand for that runner, so it drops out of the pool for
+    everyone else (pool, direct URL, offering, accepting all blocked), which
+    is also the "take it off so another runner won't accept" behavior asked
+    for earlier. Bank details are required at the confirm step. The runner
+    can release a reserved errand, the poster can take the agreement back.
+    `acceptCounterOffer()` is gone, `agreeToCounterOffer()` /
+    `withdrawCounterOffer()` are in `taskNegotiation.ts` (neither writes
+    status), and a runner's confirm is the ordinary `updateTaskStatus`
+    accept.
+  - Accepts now carry the price the client displayed and the server refuses
+    a mismatch, and the accept's `where` pins the negotiation state it
+    validated against, so a poster withdrawing mid-click can't leave a
+    runner assigned at terms that no longer exist.
+  - **Fixed a leak from 3.9**: `GET /api/tasks` returned raw rows to
+    runners, including other runners' counter-offers. The pool is now
+    built through `runnerPool.ts`, an explicit whitelist.
+  - Not verified: the pages' client-side interactions and animations (no
+    browser attached here). The endpoints and server-rendered content are.
+- [x] 3.16 Multi-round negotiation and notifications, from user feedback.
+  Verified over real HTTP (production build on its own port, since a dev
+  server of the user's already held port 3000) against the new database,
+  build and lint clean, test data deleted.
+  - **The poster can counter.** New `offerBy` column (`RUNNER | POSTER`,
+    who put the current price on the table); the other side responds and
+    either can counter, so it goes back and forth. Runner offers, poster
+    agrees or declines or *counters*; runner then accepts the counter,
+    declines it, or counters again. A runner accepting the poster's counter
+    is just a plain accept priced at the counter (`priceFor()` in
+    `taskStatus.ts`), so that is the moment bank details are required, same
+    as accepting an agreed price. While a poster's counter is aimed at one
+    runner, other runners can't cut in with offers (they can still accept at
+    the asking price, which supersedes it). Runner pool rows carry the
+    counter so their Accept button uses the right price.
+  - **Notifications.** No table: `GET /api/notifications` derives "something
+    is waiting on you" from the negotiation state (poster: a runner's open
+    offer; runner: the poster's counter, or an agreed price to confirm), so
+    it can't go stale or pile up and clears when answered. The id includes
+    the price, so a new counter is a new notification. `NotificationBell`
+    in the header polls it every 8s, shows a count and a dropdown, and
+    toasts when something new arrives (never for what was already waiting
+    at page load). The poster's dashboard rows also show "Offer: N".
+- [x] 3.17 Signed-in users stay off the guest pages, from user feedback.
+  `src/proxy.ts` (Next 16's name for middleware) redirects a signed-in
+  visitor of `/`, `/login`, `/register` to their own dashboard, so typing
+  `localhost:3000` or following a back link can't drop them on a guest page
+  and the Sign out button is the only way out of a session. It also turns
+  signed-out visitors away from `/user`, `/runner`, `/admin` before
+  anything renders (previously the page threw a `TypeError` in parallel
+  with the layout's redirect; harmless to the response but noisy).
+  `requireRole()` now guards the role layouts and also sends a session
+  whose user no longer exists (wiped DB, deleted account) to the sign-out
+  page, otherwise that session would be a trap now that the guest pages
+  are closed to it. Role-vs-area checks are still each layout's job.
+- [x] 3.18 Database moved to a new Neon project, from user request. Applied
+  all four migrations to the empty new database with `prisma migrate
+  deploy`, copied every row (`User`, `Task`, `Rating`, in foreign-key
+  order, one transaction) and verified the two databases row-for-row
+  identical, not just counts. Test rows were cleaned out of the old
+  database first so only real data moved. `.env` now points at the new
+  database, the old URL is kept in it as a commented `OLD_DATABASE_URL`
+  for rollback (`.env` is gitignored). The old database was not modified
+  beyond removing my test rows. **A running `npm run dev` keeps the old
+  connection until restarted.**
+- [ ] 3.13 `POST /api/tasks/[id]/rate` + rating form shown to poster after `COMPLETED`
+- [ ] 3.14 Average rating computed and shown on runner profile/dashboard
+- [ ] **Phase 3 complete**, full lifecycle demoable: post → search animation → accept → detail view for both sides → progress → complete → rate
 
 ## Phase 4: Polish & Deploy
 

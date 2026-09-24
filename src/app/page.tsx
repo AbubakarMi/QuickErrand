@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { LandingContent } from "./landing-content";
 
 export default function Home() {
@@ -10,10 +10,10 @@ export default function Home() {
           Quick<span className="text-primary">Errand</span>
         </span>
         <nav className="flex items-center gap-3">
-          <Button variant="ghost" render={<Link href="/login" />}>
+          <Link href="/login" className={buttonVariants({ variant: "ghost" })}>
             Log in
-          </Button>
-          <Button render={<Link href="/register" />}>Get started</Button>
+          </Link>
+          <Link href="/register" className={buttonVariants()}>Get started</Link>
         </nav>
       </header>
 

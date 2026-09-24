@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { motion } from "motion/react";
 import { ArrowRight, MapPin, ShieldCheck, Zap } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { LiveActivityCard } from "@/components/live-activity-card";
 import { MarqueeTicker } from "@/components/marquee-ticker";
 
@@ -59,21 +59,13 @@ export function LandingContent() {
             </p>
 
             <div className="mt-9 flex flex-col gap-3 sm:flex-row">
-              <Button
-                size="lg"
-                className="bg-brand-coral text-brand-coral-foreground hover:bg-brand-coral/90"
-                render={<Link href="/register" />}
-              >
+              <Link href="/register" className={buttonVariants({ size: "lg", className: "bg-brand-coral text-brand-coral-foreground hover:bg-brand-coral/90" })}>
                 Post an errand
                 <ArrowRight />
-              </Button>
-              <Button
-                size="lg"
-                variant="outline"
-                render={<Link href="/register?role=runner" />}
-              >
+              </Link>
+              <Link href="/register?role=runner" className={buttonVariants({ variant: "outline", size: "lg" })}>
                 Become a runner
-              </Button>
+              </Link>
             </div>
           </motion.div>
 
@@ -177,14 +169,10 @@ export function LandingContent() {
             Create an account and post your first task. It takes less than a
             minute.
           </p>
-          <Button
-            size="lg"
-            className="relative mt-8 bg-primary-foreground text-primary hover:bg-primary-foreground/90"
-            render={<Link href="/register" />}
-          >
+          <Link href="/register" className={buttonVariants({ size: "lg", className: "relative mt-8 bg-primary-foreground text-primary hover:bg-primary-foreground/90" })}>
             Create your account
             <ArrowRight />
-          </Button>
+          </Link>
         </motion.div>
       </section>
     </>

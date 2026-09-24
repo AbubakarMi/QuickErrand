@@ -4,9 +4,13 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { CATEGORIES } from "@/lib/categories";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+
+type PaymentMethod = "CASH" | "BANK_TRANSFER";
 
 export function NewTaskForm() {
   const router = useRouter();
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("CASH");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -24,6 +28,8 @@ export function NewTaskForm() {
         description: formData.get("description"),
         category: formData.get("category"),
         location: formData.get("location"),
+        price: Number(formData.get("price")),
+        paymentMethod,
       }),
     });
 
@@ -107,6 +113,44 @@ export function NewTaskForm() {
         </div>
       </div>
 
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="price" className="text-sm font-medium">
+            What you&apos;ll pay
+          </label>
+          <input
+            id="price"
+            name="price"
+            type="number"
+            inputMode="numeric"
+            min={1}
+            step={1}
+            required
+            placeholder="5000"
+            className="input"
+          />
+          <p className="text-xs text-muted-foreground">
+            Paid directly to the runner, not through the app.
+          </p>
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <span className="text-sm font-medium">Payment method</span>
+          <div className="flex gap-2">
+            <PaymentOption
+              label="Cash"
+              selected={paymentMethod === "CASH"}
+              onClick={() => setPaymentMethod("CASH")}
+            />
+            <PaymentOption
+              label="Bank transfer"
+              selected={paymentMethod === "BANK_TRANSFER"}
+              onClick={() => setPaymentMethod("BANK_TRANSFER")}
+            />
+          </div>
+        </div>
+      </div>
+
       {error && (
         <p className="text-sm text-destructive" role="alert">
           {error}
@@ -117,5 +161,30 @@ export function NewTaskForm() {
         {pending ? "Posting…" : "Post errand"}
       </Button>
     </form>
+  );
+}
+
+function PaymentOption({
+  label,
+  selected,
+  onClick,
+}: {
+  label: string;
+  selected: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "flex-1 rounded-lg border px-3 py-2 text-sm font-medium transition-colors",
+        selected
+          ? "border-primary bg-accent text-accent-foreground"
+          : "border-border bg-card text-muted-foreground hover:text-foreground",
+      )}
+    >
+      {label}
+    </button>
   );
 }

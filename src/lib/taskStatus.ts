@@ -17,12 +17,39 @@ const ALLOWED_TRANSITIONS: Record<TaskStatus, TaskStatus[]> = {
 
 export class TaskStatusError extends Error {}
 
+// The price a given runner gets if they accept right now. Normally the
+// asking price. But if the poster agreed to this runner's offer (errand
+// reserved for them), or countered this runner's offer and this accept is
+// the runner taking that counter, it's the negotiated price.
+function priceFor(
+  task: {
+    price: number;
+    negotiatedPrice: number | null;
+    negotiatedByRunnerId: string | null;
+    offerBy: "RUNNER" | "POSTER" | null;
+    offerAgreedAt: Date | null;
+  },
+  runnerId: string,
+) {
+  const isTheNegotiator = task.negotiatedByRunnerId === runnerId;
+  const onTheTable =
+    isTheNegotiator &&
+    (task.offerAgreedAt !== null || task.offerBy === "POSTER");
+  return onTheTable && task.negotiatedPrice !== null
+    ? task.negotiatedPrice
+    : task.price;
+}
+
 type ActingUser = { id: string; role: Role };
 
 export async function updateTaskStatus(
   taskId: string,
   newStatus: TaskStatus,
   actingUser: ActingUser,
+  // For ACCEPTED: the price the runner was looking at when they clicked.
+  // Refused on mismatch, since the terms can change between page load and
+  // click (a poster withdrawing an agreed offer, say).
+  options: { expectedPrice?: number } = {},
 ) {
   const task = await prisma.task.findUnique({ where: { id: taskId } });
   if (!task) {
@@ -46,6 +73,35 @@ export async function updateTaskStatus(
     case TaskStatus.ACCEPTED: {
       if (actingUser.role !== "RUNNER") {
         throw new TaskStatusError("Only a runner can accept a task.");
+      }
+      // Once the poster has agreed to a runner's offer, the errand is
+      // reserved for that runner and this accept is them confirming it.
+      const isReserved = task.offerAgreedAt !== null;
+      if (isReserved && task.negotiatedByRunnerId !== actingUser.id) {
+        throw new TaskStatusError("This errand is reserved for another runner.");
+      }
+      const termsPrice = priceFor(task, actingUser.id);
+      if (
+        options.expectedPrice !== undefined &&
+        options.expectedPrice !== termsPrice
+      ) {
+        throw new TaskStatusError(
+          "The price changed before you accepted. Refresh to see the new terms.",
+        );
+      }
+      // The accept button collects payout details inline, but that's UI
+      // only. A hand-built request would otherwise assign a runner the
+      // poster has nowhere to send money to.
+      if (task.paymentMethod === "BANK_TRANSFER") {
+        const runner = await prisma.user.findUnique({
+          where: { id: actingUser.id },
+          select: { bankAccountNumber: true },
+        });
+        if (!runner?.bankAccountNumber) {
+          throw new TaskStatusError(
+            "Add your bank details before accepting a bank transfer errand.",
+          );
+        }
       }
       break;
     }
@@ -81,10 +137,32 @@ export async function updateTaskStatus(
   // first. A plain `update` can't express this because Prisma's update
   // where clause only accepts unique fields, not an arbitrary filter.
   const result = await prisma.task.updateMany({
-    where: { id: taskId, status: task.status },
+    where: {
+      id: taskId,
+      status: task.status,
+      // Pin the negotiation state we validated against, so a poster
+      // withdrawing or changing the deal mid-request fails this instead
+      // of assigning at terms that no longer exist.
+      negotiatedPrice: task.negotiatedPrice,
+      negotiatedByRunnerId: task.negotiatedByRunnerId,
+      offerAgreedAt: task.offerAgreedAt,
+      offerBy: task.offerBy,
+    },
     data: {
       status: newStatus,
-      ...(newStatus === TaskStatus.ACCEPTED ? { runnerId: actingUser.id } : {}),
+      // An accept locks in the terms: an agreed offer's price becomes the
+      // price, while a plain accept at the asking price supersedes any
+      // unagreed counter-offer sitting on the task, whoever made it.
+      ...(newStatus === TaskStatus.ACCEPTED
+        ? {
+            runnerId: actingUser.id,
+            price: priceFor(task, actingUser.id),
+            negotiatedPrice: null,
+            negotiatedByRunnerId: null,
+            offerBy: null,
+            offerAgreedAt: null,
+          }
+        : {}),
     },
   });
 

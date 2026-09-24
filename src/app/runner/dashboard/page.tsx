@@ -1,8 +1,13 @@
 import { Category } from "@prisma/client";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { categoryLabel } from "@/lib/categories";
+import { presentPoolTask, runnerPoolWhere } from "@/lib/runnerPool";
+import Link from "next/link";
+import { Radio } from "lucide-react";
+import { buttonVariants } from "@/components/ui/button";
 import { CategoryFilter } from "@/components/category-filter";
-import { TaskStatusActionButton } from "@/components/task-status-action-button";
+import { LiveTaskFeed } from "./live-task-feed";
 
 export default async function RunnerDashboardPage({
   searchParams,
@@ -15,11 +20,18 @@ export default async function RunnerDashboardPage({
       ? (categoryParam as Category)
       : undefined;
 
-  const tasks = await prisma.task.findMany({
-    where: { status: "PENDING", ...(category ? { category } : {}) },
+  const session = await getServerSession(authOptions);
+  const runner = await prisma.user.findUniqueOrThrow({
+    where: { id: session!.user.id },
+    select: { category: true, bankAccountNumber: true },
+  });
+
+  const rows = await prisma.task.findMany({
+    where: runnerPoolWhere(session!.user.id, category),
     orderBy: { createdAt: "desc" },
     include: { poster: { select: { name: true } } },
   });
+  const tasks = rows.map((row) => presentPoolTask(row, session!.user.id));
 
   return (
     <div>
@@ -32,39 +44,23 @@ export default async function RunnerDashboardPage({
             Pick up a task near you.
           </p>
         </div>
-        <CategoryFilter />
+        <div className="flex items-center gap-3">
+          <CategoryFilter />
+          <Link href="/runner/live" className={buttonVariants()}>
+            <Radio />
+            Go live
+          </Link>
+        </div>
       </div>
 
-      {tasks.length === 0 ? (
-        <div className="mt-8 rounded-xl border border-dashed border-border p-10 text-center">
-          <p className="text-sm font-medium">Nothing open right now</p>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {category
-              ? "No pending errands in this category yet. Try another one."
-              : "Check back soon, new errands show up here as they're posted."}
-          </p>
-        </div>
-      ) : (
-        <ul className="mt-8 flex flex-col gap-3">
-          {tasks.map((task) => (
-            <li
-              key={task.id}
-              className="flex items-center justify-between gap-4 rounded-lg border border-border bg-card p-4"
-            >
-              <div className="min-w-0">
-                <p className="truncate font-medium">{task.title}</p>
-                <p className="mt-0.5 text-sm text-muted-foreground">
-                  {categoryLabel(task.category)} · {task.location} · posted by{" "}
-                  {task.poster.name}
-                </p>
-              </div>
-              <TaskStatusActionButton taskId={task.id} newStatus="ACCEPTED">
-                Accept
-              </TaskStatusActionButton>
-            </li>
-          ))}
-        </ul>
-      )}
+      <div className="mt-4">
+        <LiveTaskFeed
+          initialTasks={tasks}
+          runnerCategory={runner.category}
+          categoryFilter={category}
+          hasBankDetails={!!runner.bankAccountNumber}
+        />
+      </div>
     </div>
   );
 }
