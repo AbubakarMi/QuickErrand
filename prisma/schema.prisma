@@ -38,7 +38,8 @@ model User {
 
   tasksPosted      Task[]   @relation("PostedTasks")
   tasksRunning     Task[]   @relation("RunnerTasks")
-  negotiationsMade Task[]   @relation("NegotiationOffers")
+  bids             Bid[]
+  notifications    Notification[]
   ratingsGiven     Rating[] @relation("RatingsGiven")
   ratingsReceived  Rating[] @relation("RatingsReceived")
 }
@@ -85,29 +86,13 @@ model Task {
   paidAt             DateTime?
   paymentConfirmedAt DateTime?
 
-  // A runner's single active counter-offer, made instead of accepting
-  // outright. One price is on the table at a time and the two sides can go back and
-  // forth (see 3.9 and 3.16). Once the poster
-  // agrees, `offerAgreedAt` is set and the errand is reserved for that
-  // runner (off the open pool) until they confirm with a normal accept,
-  // which is where bank details get required, or release it.
-  negotiatedPrice      Int?
-  negotiatedByRunnerId String?
-  negotiatedByRunner   User?   @relation("NegotiationOffers", fields: [negotiatedByRunnerId], references: [id])
-  // Whose turn it isn't: who made the price currently on the table. The
-  // other side responds. Either side can counter, so this flips.
-  offerBy              OfferSide?
-  offerAgreedAt        DateTime?
-
-  rating Rating?
+  // Up to two per errand: the poster rates the runner and the runner rates
+  // the poster, one each (see the unique index on Rating).
+  ratings Rating[]
+  bids    Bid[]
 
   @@index([status])
   @@index([category])
-}
-
-enum OfferSide {
-  RUNNER
-  POSTER
 }
 
 enum PaymentMethod {
@@ -132,7 +117,7 @@ model Rating {
   comment   String?
   createdAt DateTime @default(now())
 
-  taskId String @unique
+  taskId String
   task   Task   @relation(fields: [taskId], references: [id])
 
   ratedById String
@@ -140,4 +125,54 @@ model Rating {
 
   ratedUserId String
   ratedUser   User   @relation("RatingsReceived", fields: [ratedUserId], references: [id])
+
+  // One rating per rater per errand. This index is the real guarantee, the
+  // checks in lib/taskRating.ts only give a readable message first.
+  @@unique([taskId, ratedById])
+  @@index([ratedUserId])
+}
+
+enum BidStatus {
+  OPEN
+  AWARDED
+  NOT_AWARDED
+}
+
+// A runner's bid on a PENDING errand. Any number of runners can bid, one
+// live bid each (changing it updates the row). The poster reviews the bids
+// and awards one, which assigns that runner at the bid price and marks the
+// rest NOT_AWARDED (see awardBid in lib/taskStatus.ts). `counterPrice` is
+// the poster's counter to this specific bid, if they made one.
+model Bid {
+  id           String    @id @default(cuid())
+  price        Int
+  counterPrice Int?
+  status       BidStatus @default(OPEN)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  taskId String
+  task   Task   @relation(fields: [taskId], references: [id])
+
+  runnerId String
+  runner   User   @relation(fields: [runnerId], references: [id])
+
+  @@unique([taskId, runnerId])
+  @@index([taskId])
+}
+
+// Something that happened that the user should hear about: a bid arrived,
+// an errand was awarded to them (or to someone else). Stored rather than
+// derived, because "you weren't awarded" is an event, not a state.
+model Notification {
+  id        String    @id @default(cuid())
+  message   String
+  href      String
+  createdAt DateTime  @default(now())
+  readAt    DateTime?
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@index([userId, readAt])
 }

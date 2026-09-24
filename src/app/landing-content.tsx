@@ -169,7 +169,7 @@ export function LandingContent() {
             Create an account and post your first task. It takes less than a
             minute.
           </p>
-          <Link href="/register" className={buttonVariants({ size: "lg", className: "relative mt-8 bg-primary-foreground text-primary hover:bg-primary-foreground/90" })}>
+          <Link href="/register" className={buttonVariants({ size: "lg", className: "relative mt-8 bg-primary-foreground font-semibold text-brand-teal-deep hover:bg-primary-foreground/90" })}>
             Create your account
             <ArrowRight />
           </Link>

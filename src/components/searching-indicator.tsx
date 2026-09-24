@@ -8,7 +8,7 @@ import { Search } from "lucide-react";
 // the classic "searching" motif. Falls back to a static (non-animating)
 // icon for reduced-motion users rather than skipping the section.
 export function SearchingIndicator({
-  label = "Looking for a runner",
+  label = "Waiting for bids",
 }: {
   label?: string;
 }) {
@@ -37,7 +37,7 @@ export function SearchingIndicator({
       </div>
       <p className="text-sm font-medium">{label}</p>
       <p className="text-xs text-muted-foreground">
-        This updates automatically as soon as a runner accepts.
+        Bids appear here as runners place them. You choose who gets the errand.
       </p>
     </div>
   );

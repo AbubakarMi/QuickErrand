@@ -1,18 +1,17 @@
 import type { Category, PaymentMethod, Prisma } from "@prisma/client";
 
-// The open pool a runner browses. An errand the poster has reserved for a
-// specific runner (they agreed to that runner's offer) drops out of the pool
-// for everyone else, but stays visible to the runner it's reserved for so
-// they can confirm it.
-export function runnerPoolWhere(
-  runnerId: string,
-  category?: Category,
-): Prisma.TaskWhereInput {
+// The open pool a runner browses: every PENDING errand, and for each the
+// runner's own bid on it, if any, plus how many bids it has in total.
+export function runnerPoolWhere(category?: Category): Prisma.TaskWhereInput {
+  return { status: "PENDING", ...(category ? { category } : {}) };
+}
+
+export function runnerPoolInclude(runnerId: string) {
   return {
-    status: "PENDING",
-    ...(category ? { category } : {}),
-    OR: [{ offerAgreedAt: null }, { negotiatedByRunnerId: runnerId }],
-  };
+    poster: { select: { name: true } },
+    bids: { where: { runnerId }, select: { price: true, counterPrice: true } },
+    _count: { select: { bids: { where: { status: "OPEN" as const } } } },
+  } satisfies Prisma.TaskInclude;
 }
 
 type PoolRow = {
@@ -22,47 +21,38 @@ type PoolRow = {
   location: string;
   price: number;
   paymentMethod: PaymentMethod;
+  createdAt: Date;
   poster: { name: string };
-  negotiatedPrice: number | null;
-  negotiatedByRunnerId: string | null;
-  offerBy: "RUNNER" | "POSTER" | null;
-  offerAgreedAt: Date | null;
+  bids: { price: number; counterPrice: number | null }[];
+  _count: { bids: number };
 };
 
-export type PoolTask = Pick<
-  PoolRow,
-  "id" | "title" | "category" | "location" | "price" | "paymentMethod" | "poster"
-> & {
-  // The poster agreed to this runner's price: confirm to take it.
-  agreedForMe: boolean;
-  // The poster countered this runner's offer: accept it, or answer back.
-  counteredForMe: boolean;
+export type PoolTask = {
+  id: string;
+  title: string;
+  category: Category;
+  location: string;
+  price: number;
+  paymentMethod: PaymentMethod;
+  createdAt: Date | string;
+  poster: { name: string };
+  bidCount: number;
+  myBid: { price: number; counterPrice: number | null } | null;
 };
 
-// An explicit whitelist rather than passing the row through: rows carry
-// other runners' counter-offers (price and who made it), which are between
-// that runner and the poster and must never reach this one. For a runner
-// the errand is reserved for, `price` is the agreed price they'd be
-// confirming.
-export function presentPoolTask(row: PoolRow, runnerId: string): PoolTask {
-  const agreedForMe =
-    row.offerAgreedAt !== null &&
-    row.negotiatedByRunnerId === runnerId &&
-    row.negotiatedPrice !== null;
-  const counteredForMe =
-    !agreedForMe &&
-    row.offerBy === "POSTER" &&
-    row.negotiatedByRunnerId === runnerId &&
-    row.negotiatedPrice !== null;
+// An explicit whitelist rather than passing the row through, so nothing
+// about other runners' bids can reach this one. All they get is a count.
+export function presentPoolTask(row: PoolRow): PoolTask {
   return {
     id: row.id,
     title: row.title,
     category: row.category,
     location: row.location,
-    price: agreedForMe || counteredForMe ? row.negotiatedPrice! : row.price,
+    price: row.price,
     paymentMethod: row.paymentMethod,
+    createdAt: row.createdAt,
     poster: { name: row.poster.name },
-    agreedForMe,
-    counteredForMe,
+    bidCount: row._count.bids,
+    myBid: row.bids[0] ?? null,
   };
 }

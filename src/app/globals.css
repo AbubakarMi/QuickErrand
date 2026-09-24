@@ -55,6 +55,7 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 
   /* QuickErrand-only tokens, not part of the shadcn semantic set */
+  --color-brand-teal-deep: var(--brand-teal-deep);
   --color-brand-coral: var(--brand-coral);
   --color-brand-coral-foreground: var(--brand-coral-foreground);
   --color-status-pending: var(--status-pending);
@@ -107,6 +108,10 @@
   --sidebar-border: #e4e0d8;
   --sidebar-ring: #1cae96;
 
+  /* Errand Teal 700, for text that sits on a light fill on top of the
+     brand color (4.5:1+ where plain --primary is only 4.0:1) */
+  --brand-teal-deep: #126f62;
+
   /* Signal Coral, used sparingly, for primary CTAs and urgency */
   --brand-coral: #ff6b4a;
   --brand-coral-foreground: #2b0f08;
@@ -157,6 +162,10 @@
   --sidebar-accent-foreground: #a6eede;
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: #3bcbb0;
+
+  /* Dark theme inverts the banner (light teal), so its button is dark and
+     the label needs to be light */
+  --brand-teal-deep: #a6eede;
 
   --brand-coral: #ff8064;
   --brand-coral-foreground: #2b0f08;

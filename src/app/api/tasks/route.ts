@@ -4,7 +4,7 @@ import { z } from "zod";
 import { Category, PaymentMethod } from "@prisma/client";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { presentPoolTask, runnerPoolWhere } from "@/lib/runnerPool";
+import { presentPoolTask, runnerPoolInclude, runnerPoolWhere } from "@/lib/runnerPool";
 
 const createTaskSchema = z.object({
   title: z.string().trim().min(1, "Title is required").max(120),
@@ -47,13 +47,11 @@ export async function GET(request: NextRequest) {
         : undefined;
 
     const rows = await prisma.task.findMany({
-      where: runnerPoolWhere(session.user.id, category),
+      where: runnerPoolWhere(category),
       orderBy: { createdAt: "desc" },
-      include: { poster: { select: { name: true } } },
+      include: runnerPoolInclude(session.user.id),
     });
-    return NextResponse.json({
-      tasks: rows.map((row) => presentPoolTask(row, session.user.id)),
-    });
+    return NextResponse.json({ tasks: rows.map(presentPoolTask) });
   }
 
   return NextResponse.json(

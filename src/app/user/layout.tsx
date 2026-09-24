@@ -9,7 +9,7 @@ export default async function UserLayout({
   const session = await requireRole("USER");
 
   return (
-    <RoleShell nav={[{ href: "/user/dashboard", label: "Errands" }, { href: "/user/history", label: "History" }]} role="USER" userName={session.user.name ?? session.user.email ?? ""}>
+    <RoleShell nav={[{ href: "/user/dashboard", label: "Errands" }, { href: "/user/history", label: "History" }, { href: `/user/profile/${session.user.id}`, label: "Profile" }]} role="USER" userName={session.user.name ?? session.user.email ?? ""}>
       {children}
     </RoleShell>
   );

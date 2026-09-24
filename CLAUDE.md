@@ -147,9 +147,11 @@ redo it.
   a PR: short, dry, exactly as long as the situation requires and no longer.
 - **One status guard function.** All task-status transitions go through the
   single `updateTaskStatus()` function described in the plan (§4). Nothing
-  else in the codebase mutates `Task.status` directly. Negotiation
-  (`taskNegotiation.ts`) and the paid record (`taskPayment.ts`) are
-  separate guards precisely because they never write status.
+  else in the codebase mutates `Task.status` directly. Bids
+  (`taskBids.ts`) and the paid record (`taskPayment.ts`) are
+  separate guards precisely because they never write status. `awardBid()`,
+  in `taskStatus.ts`, is the one other status write: a poster choosing a
+  runner from the bids (there is no first-come accept).
 - **No premature abstraction.** Three similar lines beat a speculative helper.
   Don't build a plugin system, a generic "service layer," or config-driven
   behavior for things that have exactly one implementation.

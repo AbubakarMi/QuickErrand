@@ -5,6 +5,8 @@ import { prisma } from "@/lib/prisma";
 import { categoryLabel } from "@/lib/categories";
 import { formatPrice } from "@/lib/formatPrice";
 import { paymentState, type PaymentState } from "@/lib/paymentState";
+import { getUserRating } from "@/lib/userRating";
+import { StarRating } from "@/components/star-rating";
 import { StatTile } from "@/components/stat-tile";
 
 const RUNNER_LABEL: Record<PaymentState, string> = {
@@ -15,6 +17,7 @@ const RUNNER_LABEL: Record<PaymentState, string> = {
 
 export default async function RunnerEarningsPage() {
   const session = await getServerSession(authOptions);
+  const rating = await getUserRating(session!.user.id);
   const runs = await prisma.task.findMany({
     where: { runnerId: session!.user.id, status: "COMPLETED" },
     orderBy: { updatedAt: "desc" },
@@ -36,7 +39,7 @@ export default async function RunnerEarningsPage() {
         this is your record of them.
       </p>
 
-      <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
+      <div className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatTile label="Received" value={formatPrice(received)} hint="Confirmed by you" />
         <StatTile
           label="Still owed to you"
@@ -44,6 +47,11 @@ export default async function RunnerEarningsPage() {
           hint="Completed, not yet confirmed"
         />
         <StatTile label="Completed runs" value={String(runs.length)} />
+        <StatTile
+          label="Rating"
+          value={<StarRating value={rating.average} count={rating.count} size="md" />}
+          hint="From posters, after each errand"
+        />
       </div>
 
       {runs.length === 0 ? (

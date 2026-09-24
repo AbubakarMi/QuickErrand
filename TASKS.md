@@ -128,7 +128,7 @@ own task if actually wanted after trying this.
   detail page via `ContactCard`, once assigned, exactly like the phone
   number already works. Never shown for `CASH` tasks, there's nothing to
   show.
-- [x] 3.9 Price negotiation (single counter-offer, see the scope note above):
+- [x] 3.9 Price negotiation (single counter-offer, see the scope note above; superseded by bidding in 3.19):
   a runner can propose one counter-price instead of accepting outright,
   while the task is still `PENDING`. The poster sees it (via the existing
   6s poll on the detail page, "live" the same way status already is) and
@@ -263,9 +263,84 @@ own task if actually wanted after trying this.
   for rollback (`.env` is gitignored). The old database was not modified
   beyond removing my test rows. **A running `npm run dev` keeps the old
   connection until restarted.**
-- [ ] 3.13 `POST /api/tasks/[id]/rate` + rating form shown to poster after `COMPLETED`
-- [ ] 3.14 Average rating computed and shown on runner profile/dashboard
-- [ ] **Phase 3 complete**, full lifecycle demoable: post → search animation → accept → detail view for both sides → progress → complete → rate
+- [x] 3.13 Ratings, two-way and in stars, from user feedback (the plan had
+  the poster rating the runner only). Once an errand is `COMPLETED` each side
+  rates the other in stars with optional written feedback, one rating each
+  (`Rating` is now unique on `(taskId, ratedById)`, `ratings` on `Task`).
+  `rateCounterpart()` in `taskRating.ts`; the unique index is the real
+  guarantee (two simultaneous submits: exactly one wins, verified). Both
+  detail pages show a `RatingCard`: the form until you've rated, then the
+  stars and feedback you gave and the ones you received.
+- [x] 3.14 Overall ratings, shown as stars never as a bare number
+  (`StarRating` fills fractionally, with the count beside it): on the runner
+  dashboard and earnings, on each side's contact card for the other, and on a
+  **profile page** for every user (`/user/profile/[id]` for runners,
+  `/runner/profile/[id]` for posters, and your own): stars, errands
+  completed, member since, and the feedback received with who left it. No
+  phone or bank details on a profile. A poster reaches a runner's profile
+  from the errand page and from each bid, a runner reaches a poster's the
+  same way, plus a "Profile" link in the nav.
+- [x] 3.19 **Bidding replaces first-come accept**, from user feedback:
+  multiple runners bid, the poster reviews and awards. New `Bid` table (one
+  live bid per runner, `OPEN | AWARDED | NOT_AWARDED`, optional
+  `counterPrice`). Runners bid the asking price in one tap or name another;
+  can change or withdraw. The poster sees every bid with the runner's stars,
+  rating count, errands completed, category, price against their ask and how
+  long ago, opens the profile, can counter a bid (the runner accepts or
+  ignores) and awards one. `awardBid()` (in `taskStatus.ts`, it writes
+  status) assigns that runner at their bid price and marks the other open
+  bids `NOT_AWARDED` in one transaction, pinned to the price the poster saw;
+  two simultaneous awards for different bids: exactly one wins (verified).
+  Nobody can move an errand to `ACCEPTED` any other way. This supersedes the
+  single-offer negotiation of 3.9 and 3.16 (columns and `taskNegotiation.ts`
+  removed; the one real open offer in the database was migrated into a bid).
+  Bank details are not asked for to bid; a bank transfer errand needs them
+  before the runner can start it, enforced in `updateTaskStatus`, collected
+  inline by `StartErrandButton`. A runner who bid and lost still sees how it
+  ended ("awarded to another runner" / "cancelled").
+- [x] 3.20 Stored notifications and "posted X ago", from user feedback. A
+  `Notification` table with read/unread, written by the guards on: a bid or a
+  changed bid (poster), a counter (runner), a counter accepted (poster), an
+  award (winner) and "awarded to another runner" (each other bidder), a
+  cancellation with open bids (bidders), a runner backing out, starting and
+  finishing (poster), payment marked paid and confirmed, and being rated. The
+  header bell shows the unread count, highlights unread, marks read on click
+  or "Mark all read", and toasts new arrivals (not what was waiting at load).
+  A user can only mark their own notifications read (verified). Errands and
+  bids show how long ago they were posted ("just now", "5 min ago", "2 hours
+  ago") via `timeAgo()` and a small `TimeAgo` that keeps itself fresh.
+- [x] 3.21 Favicon: a custom brand icon in place of the default (teal tile,
+  white location pin holding a check, coral dot). `src/app/icon.svg`, plus a
+  rendered `favicon.ico` (16/32/48) and `apple-icon.png`.
+- [x] 3.22 Fixed: the "Create your account" button on the landing page banner
+  was unreadable. Cause: the `cn` package did not actually resolve Tailwind
+  conflicts, and `buttonVariants` used directly on a `Link` never went
+  through any merge, so a button carried both `bg-primary` and the intended
+  `bg-primary-foreground` and the wrong one won. `cn` is now `clsx` +
+  `tailwind-merge`, and `buttonVariants` merges, so a `className` reliably
+  overrides a variant everywhere (this had also been quietly affecting the
+  hero's coral button). Label uses a new `brand-teal-deep` token for 4.5:1+
+  contrast (plain teal was 4.0:1).
+- [x] 3.23 Database SSL: connection strings now say `sslmode=verify-full`
+  explicitly, which is what `require` already meant to the driver, silencing
+  the pg "SECURITY WARNING" overlay in dev.
+- [~] 3.24 Mobile responsiveness, from user feedback ("very extensive").
+  Done: an automated audit (headless Chrome, 360/390/768/1280 across every
+  page, detecting horizontal overflow and small tap targets) found that
+  **every signed-in page overflowed 240px sideways on a phone** because the
+  header put the logo, nav, name, role badge, bell and sign out in one row.
+  Fixed: nav is a scrollable tab row under the header with the current page
+  highlighted, sign out is icon-only on phones, name and role hide until
+  there is room, page padding tightens; buttons are 36 to 44px tall on
+  phones and compact from `sm` up; list rows, bid cards, the notification
+  panel and toast stack or go full-width on small screens. **Not verified
+  after the fix**: the re-run of that audit was interrupted before it ran,
+  so the fix is confirmed only by markup, not by measurement. Re-run the
+  audit before calling this done.
+- [x] **Phase 3 complete**, full lifecycle demoable: post → bids → award →
+  start → complete → rate both ways → mark paid, with notifications at each
+  step. Everything except the 3.24 re-audit verified over real HTTP against
+  the live Neon DB, build and lint clean.
 
 ## Phase 4: Polish & Deploy
 

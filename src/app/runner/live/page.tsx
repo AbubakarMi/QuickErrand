@@ -1,7 +1,7 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { presentPoolTask, runnerPoolWhere } from "@/lib/runnerPool";
+import { presentPoolTask, runnerPoolInclude, runnerPoolWhere } from "@/lib/runnerPool";
 import { BroadcastHeader } from "@/components/broadcast-header";
 import { LiveTaskFeed } from "../dashboard/live-task-feed";
 
@@ -12,12 +12,12 @@ export default async function RunnerLivePage() {
   const [runner, rows] = await Promise.all([
     prisma.user.findUniqueOrThrow({
       where: { id: runnerId },
-      select: { category: true, bankAccountNumber: true },
+      select: { category: true },
     }),
     prisma.task.findMany({
-      where: runnerPoolWhere(runnerId),
+      where: runnerPoolWhere(),
       orderBy: { createdAt: "desc" },
-      include: { poster: { select: { name: true } } },
+      include: runnerPoolInclude(runnerId),
     }),
   ]);
 
@@ -26,9 +26,8 @@ export default async function RunnerLivePage() {
       <BroadcastHeader />
       <LiveTaskFeed
         live
-        initialTasks={rows.map((row) => presentPoolTask(row, runnerId))}
+        initialTasks={rows.map(presentPoolTask)}
         runnerCategory={runner.category}
-        hasBankDetails={!!runner.bankAccountNumber}
       />
     </div>
   );

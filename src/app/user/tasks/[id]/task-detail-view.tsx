@@ -10,8 +10,12 @@ import { StatusBadge } from "@/components/status-badge";
 import { SearchingIndicator } from "@/components/searching-indicator";
 import { ContactCard } from "@/components/contact-card";
 import { TaskStatusActionButton } from "@/components/task-status-action-button";
-import { CounterOfferCard } from "@/components/counter-offer-card";
+import { BidsPanel } from "@/components/bids-panel";
+import { TimeAgo } from "@/components/time-ago";
+import type { BidView } from "@/lib/bids";
 import { PaymentRecordCard } from "@/components/payment-record-card";
+import { RatingCard } from "@/components/rating-card";
+import type { UserRating } from "@/lib/userRating";
 
 export type PosterTask = {
   id: string;
@@ -22,13 +26,15 @@ export type PosterTask = {
   status: TaskStatus;
   price: number;
   paymentMethod: PaymentMethod;
-  negotiatedPrice: number | null;
-  negotiatedByRunner: { name: string } | null;
-  offerAgreedAt: Date | string | null;
-  offerBy: "RUNNER" | "POSTER" | null;
+  createdAt: Date | string;
+  bids: BidView[];
+  myRating: { score: number; comment: string | null } | null;
+  ratingReceived: { score: number; comment: string | null } | null;
+  runnerRating: UserRating | null;
   paidAt: Date | string | null;
   paymentConfirmedAt: Date | string | null;
   runner: {
+    id: string;
     name: string;
     phone: string | null;
     bankAccountNumber: string | null;
@@ -80,6 +86,9 @@ export function UserTaskDetailView({ initialTask }: { initialTask: PosterTask })
             {formatPrice(task.price)} ·{" "}
             {task.paymentMethod === "CASH" ? "Cash" : "Bank transfer"}
           </p>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            <TimeAgo date={task.createdAt} prefix="Posted " />
+          </p>
         </div>
         <StatusBadge status={task.status} />
       </div>
@@ -87,29 +96,13 @@ export function UserTaskDetailView({ initialTask }: { initialTask: PosterTask })
       <p className="mt-6 text-sm text-foreground">{task.description}</p>
 
       <div className="mt-8 rounded-xl border border-border bg-card">
-        {task.status === "PENDING" && (
-          <SearchingIndicator
-            label={
-              task.offerAgreedAt && task.negotiatedByRunner
-                ? `Waiting for ${task.negotiatedByRunner.name} to confirm`
-                : undefined
-            }
-          />
+        {task.status === "PENDING" && task.bids.length === 0 && (
+          <SearchingIndicator label="Waiting for bids" />
         )}
 
-        {task.status === "PENDING" &&
-          task.negotiatedPrice !== null &&
-          task.negotiatedByRunner &&
-          task.offerBy && (
-            <CounterOfferCard
-              taskId={task.id}
-              askingPrice={task.price}
-              offerPrice={task.negotiatedPrice}
-              runnerName={task.negotiatedByRunner.name}
-              offerBy={task.offerBy}
-              agreed={!!task.offerAgreedAt}
-            />
-          )}
+        {task.status === "PENDING" && task.bids.length > 0 && (
+          <BidsPanel taskId={task.id} askingPrice={task.price} bids={task.bids} />
+        )}
 
         {(task.status === "ACCEPTED" ||
           task.status === "IN_PROGRESS" ||
@@ -120,6 +113,8 @@ export function UserTaskDetailView({ initialTask }: { initialTask: PosterTask })
               label="Runner"
               name={task.runner.name}
               phone={task.runner.phone}
+              rating={task.runnerRating}
+              profileHref={`/user/profile/${task.runner.id}`}
               bankAccountNumber={
                 task.paymentMethod === "BANK_TRANSFER"
                   ? task.runner.bankAccountNumber
@@ -152,6 +147,15 @@ export function UserTaskDetailView({ initialTask }: { initialTask: PosterTask })
             Post it again
           </Link>
         </div>
+      )}
+
+      {task.status === "COMPLETED" && task.runner && (
+        <RatingCard
+          taskId={task.id}
+          counterpartName={task.runner.name}
+          given={task.myRating}
+          received={task.ratingReceived}
+        />
       )}
 
       {task.status === "COMPLETED" && (

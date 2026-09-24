@@ -12,16 +12,12 @@ import { cn } from "@/lib/utils";
 export function TaskStatusActionButton({
   taskId,
   newStatus,
-  expectedPrice,
   children,
   variant,
   className,
 }: {
   taskId: string;
   newStatus: TaskStatus;
-  // Sent with an accept so the server can refuse if the terms changed
-  // since this page loaded.
-  expectedPrice?: number;
   children: React.ReactNode;
   variant?: "default" | "outline" | "ghost" | "destructive";
   className?: string;
@@ -36,7 +32,7 @@ export function TaskStatusActionButton({
     const response = await fetch(`/api/tasks/${taskId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: newStatus, expectedPrice }),
+      body: JSON.stringify({ status: newStatus }),
     });
     setPending(false);
     if (!response.ok) {

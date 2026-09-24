@@ -8,7 +8,8 @@ import { categoryLabel } from "@/lib/categories";
 import { formatPrice } from "@/lib/formatPrice";
 import type { PoolTask } from "@/lib/runnerPool";
 import { sortTasksBySpecialty } from "@/lib/sortTasksBySpecialty";
-import { AcceptTaskButton } from "@/components/accept-task-button";
+import { BidControl } from "@/components/bid-control";
+import { TimeAgo } from "@/components/time-ago";
 
 const POLL_MS = 4000;
 
@@ -20,13 +21,11 @@ export function LiveTaskFeed({
   initialTasks,
   runnerCategory,
   categoryFilter,
-  hasBankDetails,
   live = false,
 }: {
   initialTasks: PoolTask[];
   runnerCategory: Category | null;
   categoryFilter?: Category;
-  hasBankDetails: boolean;
   live?: boolean;
 }) {
   const [tasks, setTasks] = useState(initialTasks);
@@ -34,7 +33,7 @@ export function LiveTaskFeed({
   const knownIds = useRef(new Set(initialTasks.map((t) => t.id)));
 
   // Re-sync whenever the server hands us a fresh list, either because the
-  // category filter navigation re-rendered the page, or because an accept's
+  // category filter navigation re-rendered the page, or because a bid's
   // router.refresh() did. Adjusted during render rather than in an effect,
   // React's documented pattern for resetting state off a changed prop.
   const [prevInitialTasks, setPrevInitialTasks] = useState(initialTasks);
@@ -71,7 +70,7 @@ export function LiveTaskFeed({
 
   if (sortedTasks.length === 0) {
     return (
-      <div className="mt-8 rounded-xl border border-dashed border-border p-10 text-center">
+      <div className="mt-8 rounded-xl border border-dashed border-border p-8 text-center sm:p-10">
         <p className="text-sm font-medium">
           {live ? "Nothing new yet" : "Nothing open right now"}
         </p>
@@ -85,7 +84,7 @@ export function LiveTaskFeed({
   }
 
   return (
-    <ul className="mt-8 flex flex-col gap-3">
+    <ul className="mt-6 flex flex-col gap-3 sm:mt-8">
       <AnimatePresence initial={false}>
         {sortedTasks.map((task) => (
           <motion.li
@@ -95,26 +94,19 @@ export function LiveTaskFeed({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.25 }}
-            className="flex items-center justify-between gap-4 rounded-lg border border-border bg-card p-4"
+            className="flex flex-col gap-3 rounded-lg border border-border bg-card p-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4"
           >
             <Link href={`/runner/tasks/${task.id}`} className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">
-                <p className="truncate font-medium hover:underline">
-                  {task.title}
-                </p>
+                <p className="font-medium hover:underline">{task.title}</p>
                 {newIds.has(task.id) && (
                   <span className="shrink-0 rounded-full bg-brand-coral px-2 py-0.5 text-xs font-medium text-brand-coral-foreground">
                     New
                   </span>
                 )}
-                {task.counteredForMe && (
+                {task.myBid?.counterPrice != null && (
                   <span className="shrink-0 rounded-full bg-brand-coral px-2 py-0.5 text-xs font-medium text-brand-coral-foreground">
                     Poster countered
-                  </span>
-                )}
-                {task.agreedForMe && (
-                  <span className="shrink-0 rounded-full bg-primary px-2 py-0.5 text-xs font-medium text-primary-foreground">
-                    Price agreed
                   </span>
                 )}
                 {task.category === runnerCategory && (
@@ -124,23 +116,14 @@ export function LiveTaskFeed({
                 )}
               </div>
               <p className="mt-0.5 text-sm text-muted-foreground">
-                {categoryLabel(task.category)} · {task.location} ·{" "}
-                {formatPrice(task.price)} · posted by {task.poster.name}
+                {categoryLabel(task.category)} · {task.location} · {formatPrice(task.price)}
+              </p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                <TimeAgo date={task.createdAt} prefix="Posted " /> by {task.poster.name}
+                {task.bidCount > 0 && ` · ${task.bidCount} bid${task.bidCount === 1 ? "" : "s"}`}
               </p>
             </Link>
-            <AcceptTaskButton
-              taskId={task.id}
-              price={task.price}
-              paymentMethod={task.paymentMethod}
-              hasBankDetails={hasBankDetails}
-              label={
-                task.agreedForMe
-                  ? "Confirm"
-                  : task.counteredForMe
-                    ? "Accept counter"
-                    : "Accept"
-              }
-            />
+            <BidControl taskId={task.id} askingPrice={task.price} myBid={task.myBid} />
           </motion.li>
         ))}
       </AnimatePresence>
