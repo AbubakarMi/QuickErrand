@@ -324,23 +324,36 @@ own task if actually wanted after trying this.
 - [x] 3.23 Database SSL: connection strings now say `sslmode=verify-full`
   explicitly, which is what `require` already meant to the driver, silencing
   the pg "SECURITY WARNING" overlay in dev.
-- [~] 3.24 Mobile responsiveness, from user feedback ("very extensive").
-  Done: an automated audit (headless Chrome, 360/390/768/1280 across every
-  page, detecting horizontal overflow and small tap targets) found that
-  **every signed-in page overflowed 240px sideways on a phone** because the
-  header put the logo, nav, name, role badge, bell and sign out in one row.
-  Fixed: nav is a scrollable tab row under the header with the current page
-  highlighted, sign out is icon-only on phones, name and role hide until
-  there is room, page padding tightens; buttons are 36 to 44px tall on
-  phones and compact from `sm` up; list rows, bid cards, the notification
-  panel and toast stack or go full-width on small screens. **Not verified
-  after the fix**: the re-run of that audit was interrupted before it ran,
-  so the fix is confirmed only by markup, not by measurement. Re-run the
-  audit before calling this done.
+- [x] 3.24 Mobile responsiveness, from user feedback ("very extensive").
+  Measured, not eyeballed: a headless-Chrome audit of every page (20 pages,
+  poster and runner views in every errand state, seeded with awkward content:
+  a 130-character title, a very long address, a 25,000,000 price, a
+  47-character single-word name, long feedback) at 320, 360, 390, 768 and
+  1280px, each in an isolated session, checking horizontal overflow and tap
+  targets, plus reading screenshots of the hardest pages. First run: every
+  signed-in page overflowed 240px sideways on a phone (the header put the
+  logo, nav, name, badge, bell and sign out in one row). Now **0 of 120 page
+  checks overflow and no tap target is under 36px** on a phone.
+  What changed: the header is logo and actions on one row with the nav as a
+  scrollable tab row beneath (current page highlighted), sign out is
+  icon-only on phones, name and role badge appear when there's room; buttons
+  are 36 to 44px tall on phones and compact from `sm` up; list rows, bid
+  cards, the notification panel and toast stack or go full width on small
+  screens; the logo and name links have larger tap areas; and `body` sets
+  `overflow-wrap: break-word` so one long unbroken word wraps instead of
+  widening the page. (`anywhere` was tried first and rejected: it let the
+  logo shrink and split mid-word.)
+  Harness lessons worth keeping: cookies persist across pages in one browser
+  session, so guest pages were silently audited as signed-in until each page
+  got its own context; and sections that fade in on scroll need a scroll
+  pass before a full-page screenshot or they look blank.
+  Also fixed while reading the screenshots: the landing page copy still
+  described first-come accepting ("A runner accepts it") and now describes
+  bidding.
 - [x] **Phase 3 complete**, full lifecycle demoable: post → bids → award →
   start → complete → rate both ways → mark paid, with notifications at each
-  step. Everything except the 3.24 re-audit verified over real HTTP against
-  the live Neon DB, build and lint clean.
+  step. Verified over real HTTP against the live Neon DB and, for layout, in
+  headless Chrome; build and lint clean.
 
 ## Phase 4: Polish & Deploy
 

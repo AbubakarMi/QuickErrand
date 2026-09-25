@@ -70,7 +70,7 @@ export function BidsPanel({
                 <div className="min-w-0">
                   <Link
                     href={`/user/profile/${bid.runner.id}`}
-                    className="-my-1 inline-block py-1 font-medium hover:underline"
+                    className="-my-2 inline-block py-2 font-medium hover:underline"
                   >
                     {bid.runner.name}
                   </Link>

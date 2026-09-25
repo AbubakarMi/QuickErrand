@@ -32,7 +32,7 @@ export function ContactCard({
       <div className="mt-2 flex items-center gap-2">
         <UserIcon className="size-4 text-muted-foreground" />
         {profileHref ? (
-          <Link href={profileHref} className="-my-1.5 inline-block py-1.5 text-sm font-medium hover:underline">
+          <Link href={profileHref} className="-my-2.5 inline-block py-2.5 text-sm font-medium hover:underline">
             {name}
           </Link>
         ) : (

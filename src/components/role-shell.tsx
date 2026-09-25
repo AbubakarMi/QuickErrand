@@ -30,7 +30,7 @@ export function RoleShell({
       <header className="flex flex-wrap items-center gap-x-2 border-b border-border px-4 pt-3 sm:px-10 sm:py-4">
         <Link
           href="/"
-          className="pb-2 font-heading text-lg font-semibold tracking-tight sm:pb-0"
+          className="-mt-3 pt-3 pb-2 font-heading text-lg font-semibold tracking-tight whitespace-nowrap sm:mt-0 sm:pt-0 sm:pb-0"
         >
           Quick<span className="text-primary">Errand</span>
         </Link>

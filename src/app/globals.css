@@ -183,6 +183,12 @@
   }
   body {
     @apply bg-background text-foreground;
+    /* Inherited by everything below. A long unbroken word (a name, a URL,
+       a pasted string) wraps instead of pushing the page wider than the
+       screen, which on a phone means sideways scrolling. break-word, not
+       anywhere: anywhere also lets squeezed flex items shrink below their
+       word width, which splits short words like the logo mid-word. */
+    overflow-wrap: break-word;
   }
   html {
     @apply font-sans;

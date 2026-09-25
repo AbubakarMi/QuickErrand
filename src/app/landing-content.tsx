@@ -15,13 +15,13 @@ const STEPS = [
   },
   {
     number: "02",
-    title: "A runner accepts it",
-    body: "Nearby runners browse open tasks in their category and pick yours up. No dispatch queue, no waiting on a match.",
+    title: "Runners bid, you choose",
+    body: "Nearby runners send you their price. Compare their ratings and track record, counter if you like, and award the errand to who you want.",
   },
   {
     number: "03",
     title: "Track it live",
-    body: "Watch the status move from accepted to in progress to done, then rate the runner when it's finished.",
+    body: "Watch the status move from awarded to in progress to done, then rate each other when it's finished.",
   },
 ];
 
@@ -135,7 +135,7 @@ export function LandingContent() {
           <Feature
             icon={<MapPin className="size-5 text-primary" />}
             title="Local matching"
-            body="Runners browse and accept tasks near them. No algorithm to fight with."
+            body="Runners browse errands near them and bid. You pick the winner, not an algorithm."
           />
           <Feature
             icon={<Zap className="size-5 text-primary" />}
@@ -145,7 +145,7 @@ export function LandingContent() {
           <Feature
             icon={<ShieldCheck className="size-5 text-primary" />}
             title="Rated runners"
-            body="Every completed task gets rated, so reliable runners stand out over time."
+            body="Both sides rate each other after every errand, so reliable people stand out over time."
           />
         </motion.div>
       </section>
