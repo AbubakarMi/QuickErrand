@@ -70,6 +70,9 @@ export default async function UserHistoryPage() {
                   {errand.status === "COMPLETED"
                     ? ` · ${POSTER_LABEL[paymentState(errand)]}`
                     : ""}
+                  {errand.status === "CANCELLED" && errand.cancelReason
+                    ? ` · "${errand.cancelReason}"`
+                    : ""}
                 </p>
               </Link>
               <div className="flex shrink-0 items-center gap-3">

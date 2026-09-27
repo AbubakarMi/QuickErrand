@@ -9,7 +9,7 @@ import { formatPrice } from "@/lib/formatPrice";
 import { StatusBadge } from "@/components/status-badge";
 import { SearchingIndicator } from "@/components/searching-indicator";
 import { ContactCard } from "@/components/contact-card";
-import { TaskStatusActionButton } from "@/components/task-status-action-button";
+import { CancelTaskButton } from "@/components/cancel-task-button";
 import { BidsPanel } from "@/components/bids-panel";
 import { TimeAgo } from "@/components/time-ago";
 import type { BidView } from "@/lib/bids";
@@ -33,6 +33,7 @@ export type PosterTask = {
   runnerRating: UserRating | null;
   paidAt: Date | string | null;
   paymentConfirmedAt: Date | string | null;
+  cancelReason: string | null;
   runner: {
     id: string;
     name: string;
@@ -92,6 +93,12 @@ export function UserTaskDetailView({ initialTask }: { initialTask: PosterTask })
         </div>
         <StatusBadge status={task.status} />
       </div>
+
+      {task.status === "CANCELLED" && task.cancelReason && (
+        <p className="mt-3 rounded-lg bg-muted px-3 py-2 text-sm text-muted-foreground">
+          Cancelled: {task.cancelReason}
+        </p>
+      )}
 
       <p className="mt-6 text-sm text-foreground">{task.description}</p>
 
@@ -168,14 +175,10 @@ export function UserTaskDetailView({ initialTask }: { initialTask: PosterTask })
       )}
 
       {task.status === "PENDING" && (
-        <div className="mt-6">
-          <TaskStatusActionButton
-            taskId={task.id}
-            newStatus="CANCELLED"
-            variant="outline"
-          >
+        <div className="mt-6 flex justify-end">
+          <CancelTaskButton taskId={task.id} reasonPlaceholder="Why are you cancelling? (optional)">
             Cancel errand
-          </TaskStatusActionButton>
+          </CancelTaskButton>
         </div>
       )}
     </div>

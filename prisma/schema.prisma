@@ -86,6 +86,12 @@ model Task {
   paidAt             DateTime?
   paymentConfirmedAt DateTime?
 
+  // Set only on a CANCELLED task, by whoever cancelled it (the poster
+  // while PENDING, the assigned runner backing out of an ACCEPTED task).
+  // Optional, free text, shown next to the status badge so "Cancelled"
+  // reads as something more than a dead end.
+  cancelReason String?
+
   // Up to two per errand: the poster rates the runner and the runner rates
   // the poster, one each (see the unique index on Rating).
   ratings Rating[]

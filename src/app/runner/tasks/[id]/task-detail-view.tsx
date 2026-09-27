@@ -8,6 +8,7 @@ import type { UserRating } from "@/lib/userRating";
 import { StatusBadge } from "@/components/status-badge";
 import { ContactCard } from "@/components/contact-card";
 import { TaskStatusActionButton } from "@/components/task-status-action-button";
+import { CancelTaskButton } from "@/components/cancel-task-button";
 import { BidControl } from "@/components/bid-control";
 import { StartErrandButton } from "@/components/start-errand-button";
 import { PaymentRecordCard } from "@/components/payment-record-card";
@@ -33,6 +34,7 @@ export type RunnerTask = {
   posterRating: UserRating | null;
   paidAt: Date | string | null;
   paymentConfirmedAt: Date | string | null;
+  cancelReason: string | null;
   // The poster's name and rating are fair game for anyone deciding whether
   // to bid. Their phone is null until this runner is the one assigned.
   poster: { id: string; name: string; phone: string | null } | null;
@@ -94,6 +96,12 @@ export function RunnerTaskDetailView({
         </div>
         <StatusBadge status={task.status} />
       </div>
+
+      {task.status === "CANCELLED" && task.cancelReason && (
+        <p className="mt-3 rounded-lg bg-muted px-3 py-2 text-sm text-muted-foreground">
+          Cancelled: {task.cancelReason}
+        </p>
+      )}
 
       <p className="mt-6 text-sm text-foreground">{task.description}</p>
 
@@ -173,9 +181,9 @@ export function RunnerTaskDetailView({
               paymentMethod={task.paymentMethod}
               hasBankDetails={hasBankDetails}
             />
-            <TaskStatusActionButton taskId={task.id} newStatus="CANCELLED" variant="outline">
+            <CancelTaskButton taskId={task.id} reasonPlaceholder="Why are you backing out? (optional)">
               Back out
-            </TaskStatusActionButton>
+            </CancelTaskButton>
           </div>
         </div>
       )}

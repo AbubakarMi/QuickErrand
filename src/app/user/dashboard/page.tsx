@@ -5,7 +5,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { buttonVariants } from "@/components/ui/button";
 import { StatusBadge } from "@/components/status-badge";
-import { TaskStatusActionButton } from "@/components/task-status-action-button";
+import { CancelTaskButton } from "@/components/cancel-task-button";
 import { TimeAgo } from "@/components/time-ago";
 import { categoryLabel } from "@/lib/categories";
 import { formatPrice } from "@/lib/formatPrice";
@@ -65,6 +65,7 @@ export default async function UserDashboardPage() {
                 </p>
                 <p className="mt-0.5 text-xs text-muted-foreground">
                   <TimeAgo date={task.createdAt} prefix="Posted " />
+                  {task.status === "CANCELLED" && task.cancelReason && ` · "${task.cancelReason}"`}
                 </p>
               </Link>
               <div className="flex flex-wrap items-center gap-2 sm:gap-3">
@@ -75,9 +76,7 @@ export default async function UserDashboardPage() {
                 )}
                 <StatusBadge status={task.status} />
                 {task.status === "PENDING" && (
-                  <TaskStatusActionButton taskId={task.id} newStatus="CANCELLED" variant="outline">
-                    Cancel
-                  </TaskStatusActionButton>
+                  <CancelTaskButton taskId={task.id}>Cancel</CancelTaskButton>
                 )}
               </div>
             </li>

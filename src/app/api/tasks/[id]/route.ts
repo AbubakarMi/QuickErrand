@@ -8,7 +8,10 @@ import { updateTaskStatus, TaskStatusError } from "@/lib/taskStatus";
 import { getUserRating } from "@/lib/userRating";
 import { getBidsForPoster } from "@/lib/bids";
 
-const patchSchema = z.object({ status: z.enum(TaskStatus) });
+const patchSchema = z.object({
+  status: z.enum(TaskStatus),
+  cancelReason: z.string().trim().max(300).optional(),
+});
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -110,10 +113,12 @@ export async function PATCH(request: Request, { params }: RouteParams) {
 
   const { id } = await params;
   try {
-    const task = await updateTaskStatus(id, parsed.data.status, {
-      id: session.user.id,
-      role: session.user.role,
-    });
+    const task = await updateTaskStatus(
+      id,
+      parsed.data.status,
+      { id: session.user.id, role: session.user.role },
+      parsed.data.cancelReason,
+    );
     return NextResponse.json({ task });
   } catch (error) {
     if (error instanceof TaskStatusError) {

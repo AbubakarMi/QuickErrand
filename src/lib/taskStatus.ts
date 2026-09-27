@@ -25,6 +25,8 @@ export async function updateTaskStatus(
   taskId: string,
   newStatus: TaskStatus,
   actingUser: ActingUser,
+  // Only meaningful (and only ever stored) when newStatus is CANCELLED.
+  cancelReason?: string,
 ) {
   const task = await prisma.task.findUnique({
     where: { id: taskId },
@@ -94,7 +96,10 @@ export async function updateTaskStatus(
   // Prisma's update where clause only accepts unique fields.
   const result = await prisma.task.updateMany({
     where: { id: taskId, status: task.status },
-    data: { status: newStatus },
+    data: {
+      status: newStatus,
+      ...(newStatus === TaskStatus.CANCELLED && cancelReason ? { cancelReason } : {}),
+    },
   });
   if (result.count === 0) {
     throw new TaskStatusError(
