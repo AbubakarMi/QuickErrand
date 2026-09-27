@@ -36,6 +36,13 @@ model User {
   bankAccountNumber String?
   bankName          String?
 
+  // Password reset with no email service configured: set at registration,
+  // checked at /forgot-password instead of a mailed reset link. Hashed the
+  // same way as the password itself, never stored or compared in plain
+  // text.
+  securityQuestion   String?
+  securityAnswerHash String?
+
   tasksPosted      Task[]   @relation("PostedTasks")
   tasksRunning     Task[]   @relation("RunnerTasks")
   bids             Bid[]

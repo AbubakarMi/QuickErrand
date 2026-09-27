@@ -8,6 +8,7 @@ import { Bike, Mail, ShoppingBag, User as UserIcon } from "lucide-react";
 import { registerUser, type RegisterState } from "./actions";
 import { Button } from "@/components/ui/button";
 import { CATEGORIES } from "@/lib/categories";
+import { SECURITY_QUESTIONS } from "@/lib/securityQuestions";
 import { cn } from "@/lib/utils";
 
 const initialState: RegisterState = {};
@@ -154,6 +155,40 @@ export function RegisterForm() {
               </select>
             </Field>
           )}
+
+          <Field label="Security question" htmlFor="securityQuestion">
+            <p className="mb-1 -mt-0.5 text-xs text-muted-foreground">
+              There&apos;s no email on this account, so this is how you get
+              back in if you forget your password.
+            </p>
+            <select
+              id="securityQuestion"
+              name="securityQuestion"
+              required
+              defaultValue=""
+              className="input"
+            >
+              <option value="" disabled>
+                Choose a question
+              </option>
+              {SECURITY_QUESTIONS.map((q) => (
+                <option key={q} value={q}>
+                  {q}
+                </option>
+              ))}
+            </select>
+          </Field>
+
+          <Field label="Answer" htmlFor="securityAnswer">
+            <input
+              id="securityAnswer"
+              name="securityAnswer"
+              required
+              autoComplete="off"
+              placeholder="Your answer"
+              className="input"
+            />
+          </Field>
 
           {state.error && (
             <p className="text-sm text-destructive" role="alert">

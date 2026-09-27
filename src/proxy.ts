@@ -11,7 +11,7 @@ import { roleHomePath } from "@/lib/roleHome";
 //    here means their pages never render without a session, rather than
 //    rendering in parallel with the layout's redirect and throwing.
 // Which role may see which area is still decided by each area's layout.
-const GUEST_PATHS = new Set(["/", "/login", "/register"]);
+const GUEST_PATHS = new Set(["/", "/login", "/register", "/forgot-password"]);
 
 export async function proxy(request: NextRequest) {
   const token = await getToken({
@@ -30,5 +30,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/", "/login", "/register", "/user/:path*", "/runner/:path*", "/admin/:path*"],
+  matcher: ["/", "/login", "/register", "/forgot-password", "/user/:path*", "/runner/:path*", "/admin/:path*"],
 };

@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 export function LoginForm() {
   const searchParams = useSearchParams();
   const justRegistered = searchParams.get("registered") === "1";
+  const justReset = searchParams.get("reset") === "1";
   const authError = searchParams.get("error");
   const [pending, setPending] = useState(false);
 
@@ -41,6 +42,11 @@ export function LoginForm() {
           Account created. Log in to continue.
         </p>
       )}
+      {justReset && (
+        <p className="rounded-lg bg-accent px-3 py-2 text-sm text-accent-foreground">
+          Password reset. Log in with your new one.
+        </p>
+      )}
       {authError && (
         <p className="text-sm text-destructive" role="alert">
           Incorrect email or password.
@@ -66,9 +72,17 @@ export function LoginForm() {
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <label htmlFor="password" className="text-sm font-medium">
-          Password
-        </label>
+        <div className="flex items-center justify-between">
+          <label htmlFor="password" className="text-sm font-medium">
+            Password
+          </label>
+          <Link
+            href="/forgot-password"
+            className="-my-1 py-1 text-xs font-medium text-primary underline-offset-4 hover:underline"
+          >
+            Forgot password?
+          </Link>
+        </div>
         <div className="relative">
           <Lock className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
           <input
