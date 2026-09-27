@@ -374,10 +374,9 @@ own task if actually wanted after trying this.
 - [x] 4.7 Cancel-with-reason: an optional reason on cancelling or backing out of
   an errand, stored on `Task.cancelReason`, shown on the detail and history
   pages.
-- [x] 4.8 Phone numbers on a contact card are `tel:` links. **Currently
-  unreachable**: nothing in the app collects `User.phone`, so this only
-  matters once a phone field exists somewhere (profile settings or
-  registration). Flagged to the user, not building that field unprompted.
+- [x] 4.8 Phone numbers on a contact card are `tel:` links. Registration has an
+  optional phone field, and your own profile page can add or edit it after
+  the fact (`/api/me/phone`), so the link now has something to point at.
 - [x] 4.9 Landing page: a one-line trust/pricing note under the hero CTAs
   ("free to post, runners set their own price, no cut").
 - [ ] **Phase 4 complete**, deployed, demoable end-to-end on a real URL

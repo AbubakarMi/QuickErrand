@@ -18,5 +18,5 @@ export default async function RunnerAreaProfilePage({
     const target = await prisma.user.findUnique({ where: { id }, select: { role: true } });
     if (target?.role !== "USER") notFound();
   }
-  return <ProfileView userId={id} />;
+  return <ProfileView userId={id} viewerId={session!.user.id} />;
 }

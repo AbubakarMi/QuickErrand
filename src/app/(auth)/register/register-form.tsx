@@ -4,7 +4,7 @@ import { useActionState, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { AnimatePresence, motion } from "motion/react";
-import { Bike, Mail, ShoppingBag, User as UserIcon } from "lucide-react";
+import { Bike, Mail, Phone, ShoppingBag, User as UserIcon } from "lucide-react";
 import { registerUser, type RegisterState } from "./actions";
 import { Button } from "@/components/ui/button";
 import { CATEGORIES } from "@/lib/categories";
@@ -117,6 +117,20 @@ export function RegisterForm() {
                 required
                 autoComplete="email"
                 placeholder="you@example.com"
+                className="input pl-9"
+              />
+            </div>
+          </Field>
+
+          <Field label="Phone (optional)" htmlFor="phone">
+            <div className="relative">
+              <Phone className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+              <input
+                id="phone"
+                name="phone"
+                type="tel"
+                autoComplete="tel"
+                placeholder="+234 800 000 0000"
                 className="input pl-9"
               />
             </div>

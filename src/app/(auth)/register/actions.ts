@@ -16,6 +16,13 @@ const common = {
   name: z.string().trim().min(1, "Name is required"),
   email: z.email(),
   password: z.string().min(8, "Password must be at least 8 characters"),
+  // Optional, shown to whoever you're paired with once an errand is
+  // awarded (ContactCard). Left blank, it can be added later from your
+  // own profile page instead.
+  phone: z
+    .string()
+    .trim()
+    .refine((v) => v === "" || /^[0-9+\-() ]{7,20}$/.test(v), "Enter a valid phone number"),
   securityQuestion: z.enum(SECURITY_QUESTIONS),
   securityAnswer: z.string().trim().min(1, "An answer is required"),
 };
@@ -54,6 +61,7 @@ export async function registerUser(
     data: {
       name: parsed.data.name,
       email: parsed.data.email,
+      phone: parsed.data.phone || null,
       passwordHash,
       role: parsed.data.role,
       category: parsed.data.role === "RUNNER" ? parsed.data.category : null,

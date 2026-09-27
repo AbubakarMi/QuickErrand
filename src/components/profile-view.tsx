@@ -4,18 +4,27 @@ import { categoryLabel } from "@/lib/categories";
 import { getUserRating } from "@/lib/userRating";
 import { StarRating } from "@/components/star-rating";
 import { StatTile } from "@/components/stat-tile";
+import { PhoneSettingsForm } from "@/components/phone-settings-form";
 
 const FEEDBACK_LIMIT = 20;
 
 // A person's public face in the app: who they are, their overall rating in
-// stars, and the feedback they've received. No contact or payout details,
-// those only ever appear on an errand you're actually part of. Which
-// profiles a given viewer may open is decided by the route, this just
-// renders one.
-export async function ProfileView({ userId }: { userId: string }) {
+// stars, and the feedback they've received. No contact or payout details
+// to anyone else, those only ever appear on an errand you're actually
+// part of (ContactCard). Your own phone number is the one exception, and
+// only on your own profile, editable here since there's nowhere else in
+// the app to set it. Which profiles a given viewer may open is decided by
+// the route, this just renders one.
+export async function ProfileView({
+  userId,
+  viewerId,
+}: {
+  userId: string;
+  viewerId?: string;
+}) {
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { id: true, name: true, role: true, category: true, createdAt: true },
+    select: { id: true, name: true, role: true, category: true, createdAt: true, phone: true },
   });
   if (!user || user.role === "ADMIN") {
     notFound();
@@ -51,6 +60,8 @@ export async function ProfileView({ userId }: { userId: string }) {
         · Member since{" "}
         {user.createdAt.toLocaleDateString(undefined, { month: "long", year: "numeric" })}
       </p>
+
+      {viewerId === user.id && <PhoneSettingsForm currentPhone={user.phone} />}
 
       <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
         <StatTile
