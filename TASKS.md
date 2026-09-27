@@ -357,11 +357,29 @@ own task if actually wanted after trying this.
 
 ## Phase 4: Polish & Deploy
 
-- [ ] 4.1 `/admin/dashboard/page.tsx` (already a shell from Phase 1), read-only users + tasks overview
+- [x] 4.1 `/admin/dashboard/page.tsx`, read-only users + tasks overview (stat tiles,
+  two tables, empty states, its own loading.tsx). Read-only on purpose, no
+  writes.
 - [ ] 4.2 Admin: deactivate-user boolean flag (stretch, optional)
 - [ ] 4.3 Error handling + form validation (zod) across all mutating routes
-- [ ] 4.4 Empty states, loading states, and responsive pass across all pages
+- [x] 4.4a Loading states: `loading.tsx` added for every data-driven signed-in
+  route (both dashboards, both task detail pages, history, earnings, both
+  profile pages, admin), shaped like the real page via shared skeleton
+  pieces in `components/skeletons.tsx`. Empty states were already in place
+  from earlier phases (verified, not rebuilt). Responsive pass across all
+  pages (the rest of 4.4) not done this round.
 - [ ] 4.5 Deploy: Vercel (app) + Neon or Supabase (Postgres), **needs user's deploy target decision**
+- [x] 4.6 Password reset with a security question (no email service configured,
+  see CLAUDE.md), set at registration, checked at `/forgot-password`.
+- [x] 4.7 Cancel-with-reason: an optional reason on cancelling or backing out of
+  an errand, stored on `Task.cancelReason`, shown on the detail and history
+  pages.
+- [x] 4.8 Phone numbers on a contact card are `tel:` links. **Currently
+  unreachable**: nothing in the app collects `User.phone`, so this only
+  matters once a phone field exists somewhere (profile settings or
+  registration). Flagged to the user, not building that field unprompted.
+- [x] 4.9 Landing page: a one-line trust/pricing note under the hero CTAs
+  ("free to post, runners set their own price, no cut").
 - [ ] **Phase 4 complete**, deployed, demoable end-to-end on a real URL
 
 ---
