@@ -67,6 +67,11 @@ export function LandingContent() {
                 Become a runner
               </Link>
             </div>
+
+            <p className="mt-5 text-sm text-muted-foreground">
+              Free to post. Runners set their own price and you pick who to
+              hire, QuickErrand never takes a cut or holds your money.
+            </p>
           </motion.div>
 
           <motion.div

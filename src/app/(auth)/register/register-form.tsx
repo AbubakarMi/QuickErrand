@@ -85,7 +85,7 @@ export function RegisterForm() {
             <button
               type="button"
               onClick={() => setStep("role")}
-              className="-mb-1 self-start text-xs font-medium text-muted-foreground hover:text-foreground"
+              className="-mx-2 -mb-1 self-start rounded-md px-2 py-2 text-xs font-medium text-muted-foreground hover:text-foreground"
             >
               ← {role === "USER" ? "Posting errands" : "Running errands"},
               change
