@@ -47,7 +47,9 @@ export function ContactCard({
       {phone && (
         <div className="mt-1 flex items-center gap-2">
           <Phone className="size-4 text-muted-foreground" />
-          <span className="text-sm">{phone}</span>
+          <a href={`tel:${phone}`} className="text-sm hover:underline">
+            {phone}
+          </a>
         </div>
       )}
       {(bankAccountNumber || bankName) && (
