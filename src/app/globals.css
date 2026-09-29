@@ -243,10 +243,22 @@
   animation-play-state: paused;
 }
 
+/* The admin live globe (admin-live-globe.tsx): each orbiting node travels
+   this one shared path, phase-shifted around the loop with a negative
+   animation-delay per node rather than a @keyframes each. offset-rotate
+   is set to 0deg inline per node so its icon stays upright instead of
+   turning to follow the path. */
+@keyframes admin-orbit {
+  to {
+    offset-distance: 100%;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .hero-blob-a,
   .hero-blob-b,
-  .marquee-track {
+  .marquee-track,
+  .admin-orbit-node {
     animation: none;
   }
 }

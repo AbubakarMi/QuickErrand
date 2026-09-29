@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
-import { AdminLiveHeader } from "@/components/admin-live-header";
-import { AdminLiveFeed, type LiveTask } from "@/components/admin-live-feed";
+import { AdminLiveView } from "@/components/admin-live-view";
+import type { LiveTask } from "@/components/admin-live-feed";
 
 const LIMIT = 50;
 
@@ -30,9 +30,15 @@ export default async function AdminLivePage() {
   }));
 
   return (
-    <div className="mx-auto w-full max-w-3xl">
-      <AdminLiveHeader count={initialTasks.length} />
-      <AdminLiveFeed initialTasks={initialTasks} />
+    <div>
+      <h1 className="text-center text-2xl font-semibold tracking-tight">Live</h1>
+      <p className="mx-auto mt-1 max-w-md text-center text-sm text-muted-foreground">
+        Everything posted, being negotiated, or already awarded and running
+        across the platform, updating on its own.
+      </p>
+      <div className="mt-8">
+        <AdminLiveView initialTasks={initialTasks} />
+      </div>
     </div>
   );
 }

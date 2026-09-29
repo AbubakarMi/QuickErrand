@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion } from "motion/react";
 import type { Category, TaskStatus } from "@prisma/client";
@@ -21,13 +20,13 @@ export type LiveTask = {
   bidCount: number;
 };
 
-const POLL_MS = 4000;
-
 // What each active status actually means right now, phrased for someone
 // watching the whole platform rather than one errand, "negotiating" is
 // this project's own word for an open, unbid PENDING errand vs one with
-// offers on it, distinct enough to be worth saying out loud here.
-function phase(task: LiveTask): { label: string; colorVar: string } {
+// offers on it, distinct enough to be worth saying out loud here. Shared
+// by the globe (admin-live-globe.tsx) and this list so the two views
+// never disagree on wording.
+export function phase(task: LiveTask): { label: string; colorVar: string } {
   if (task.status === "PENDING") {
     return task.bidCount > 0
       ? { label: `Negotiating · ${task.bidCount} bid${task.bidCount === 1 ? "" : "s"}`, colorVar: "--status-pending" }
@@ -39,28 +38,11 @@ function phase(task: LiveTask): { label: string; colorVar: string } {
   return { label: "In progress", colorVar: "--status-in-progress" };
 }
 
-export function AdminLiveFeed({ initialTasks }: { initialTasks: LiveTask[] }) {
-  const [tasks, setTasks] = useState(initialTasks);
-  const [newIds, setNewIds] = useState<Set<string>>(new Set());
-  const knownIds = useRef(new Set(initialTasks.map((t) => t.id)));
-
-  useEffect(() => {
-    const poll = async () => {
-      const response = await fetch("/api/admin/live");
-      if (!response.ok) return;
-      const body: { tasks: LiveTask[] } = await response.json();
-
-      const arrivals = body.tasks.map((t) => t.id).filter((id) => !knownIds.current.has(id));
-      if (arrivals.length > 0) {
-        arrivals.forEach((id) => knownIds.current.add(id));
-        setNewIds((prev) => new Set([...prev, ...arrivals]));
-      }
-      setTasks(body.tasks);
-    };
-    const id = setInterval(poll, POLL_MS);
-    return () => clearInterval(id);
-  }, []);
-
+// The readable list beneath the globe (admin-live-globe.tsx): same live
+// data, no spatial reading required. Both take their tasks from
+// useLivePoll in the shared parent, admin-live-view.tsx, rather than
+// polling twice.
+export function AdminLiveFeed({ tasks, newIds }: { tasks: LiveTask[]; newIds: Set<string> }) {
   if (tasks.length === 0) {
     return (
       <div className="mt-8 rounded-xl border border-dashed border-border p-8 text-center sm:p-10">
