@@ -365,7 +365,18 @@ own task if actually wanted after trying this.
   signed-in, now-deactivated user to `/signed-out`, which actually clears
   the session instead of NextAuth's default confirm-and-click page).
   Reactivating restores access immediately, nothing is deleted.
-- [ ] 4.3 Error handling + form validation (zod) across all mutating routes
+- [x] 4.3 Error handling + form validation (zod) across all mutating routes. Verified
+  by audit (2026-09-29): every mutating API route (`/api/tasks`,
+  `/api/tasks/[id]`, `/api/tasks/[id]/bids`, `/api/tasks/[id]/bids/[bidId]`,
+  `/api/tasks/[id]/rate`, `/api/tasks/[id]/payment`, `/api/me/bank-details`,
+  `/api/me/phone`, `/api/notifications`, `/api/admin/users/[id]`) and both
+  server actions (`register`, `forgot-password`) validate their input with
+  a zod schema at the boundary and check `getServerSession` before
+  mutating, this happened incrementally as each feature was built rather
+  than as one dedicated pass, but the coverage is complete. Not separately
+  re-verified: that every client form surfaces the resulting error text
+  well (most do, via an inline `error` state already checked ad hoc
+  per-feature).
 - [x] 4.4a Loading states: `loading.tsx` added for every data-driven signed-in
   route (both dashboards, both task detail pages, history, earnings, both
   profile pages, admin), shaped like the real page via shared skeleton
