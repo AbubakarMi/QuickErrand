@@ -1,38 +1,43 @@
+import { TaskStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { StatTile } from "@/components/stat-tile";
-import { StatusBadge } from "@/components/status-badge";
-import { TimeAgo } from "@/components/time-ago";
-import { DeactivateUserButton } from "@/components/deactivate-user-button";
-import { categoryLabel } from "@/lib/categories";
+import { STATUS_CONFIG } from "@/components/status-badge";
+import { HorizontalBarChart } from "@/components/charts/horizontal-bar-chart";
+import { TrendBarChart } from "@/components/charts/trend-bar-chart";
+import { CATEGORIES } from "@/lib/categories";
 import { formatPrice } from "@/lib/formatPrice";
+import { bucketByDay } from "@/lib/dailyBuckets";
 
-const RECENT_LIMIT = 50;
+const TREND_DAYS = 14;
+const STATUS_ORDER: TaskStatus[] = ["PENDING", "ACCEPTED", "IN_PROGRESS", "COMPLETED", "CANCELLED"];
 
-const ROLE_LABEL: Record<string, string> = {
-  USER: "Requester",
-  RUNNER: "Runner",
-};
-
-// Mostly read-only, this is a moderation view, not a CRUD panel. The one
-// exception is deactivating a user (TASKS.md 4.2), everything else here is
-// display only.
+// The platform at a glance: numbers, then the same numbers shaped into
+// something you can actually read a trend out of. Users and Errands moved
+// to their own tabs (see admin/layout.tsx), this page stayed a swamp of
+// two full tables until then. Still read-only.
 export default async function AdminDashboardPage() {
-  const [userCounts, taskCounts, users, tasks] = await Promise.all([
+  const trendSince = new Date();
+  trendSince.setUTCDate(trendSince.getUTCDate() - (TREND_DAYS - 1));
+  trendSince.setUTCHours(0, 0, 0, 0);
+
+  const [
+    userCounts,
+    taskCounts,
+    categoryCounts,
+    completedValue,
+    bidCount,
+    recentTasks,
+    recentUsers,
+  ] = await Promise.all([
     prisma.user.groupBy({ by: ["role"], _count: true }),
     prisma.task.groupBy({ by: ["status"], _count: true }),
+    prisma.task.groupBy({ by: ["category"], _count: true }),
+    prisma.task.aggregate({ where: { status: "COMPLETED" }, _sum: { price: true } }),
+    prisma.bid.count(),
+    prisma.task.findMany({ where: { createdAt: { gte: trendSince } }, select: { createdAt: true } }),
     prisma.user.findMany({
-      where: { role: { not: "ADMIN" } },
-      orderBy: { createdAt: "desc" },
-      take: RECENT_LIMIT,
-      select: { id: true, name: true, email: true, role: true, category: true, createdAt: true, isActive: true },
-    }),
-    prisma.task.findMany({
-      orderBy: { createdAt: "desc" },
-      take: RECENT_LIMIT,
-      include: {
-        poster: { select: { name: true } },
-        runner: { select: { name: true } },
-      },
+      where: { role: { not: "ADMIN" }, createdAt: { gte: trendSince } },
+      select: { createdAt: true },
     }),
   ]);
 
@@ -43,130 +48,73 @@ export default async function AdminDashboardPage() {
     .reduce((sum, r) => sum + r._count, 0);
   const completedCount = taskCounts.find((r) => r.status === "COMPLETED")?._count ?? 0;
 
+  const statusData = STATUS_ORDER.map((status) => ({
+    label: STATUS_CONFIG[status].label,
+    value: taskCounts.find((r) => r.status === status)?._count ?? 0,
+    color: `var(${STATUS_CONFIG[status].colorVar})`,
+  }));
+
+  const categoryData = CATEGORIES.map((c) => ({
+    label: c.label,
+    value: categoryCounts.find((r) => r.category === c.value)?._count ?? 0,
+  }))
+    .sort((a, b) => b.value - a.value)
+    .filter((c, i) => c.value > 0 || i < 3); // always show the top few, even at zero, so the chart isn't just one bar early on
+
+  const postedTrend = bucketByDay(recentTasks.map((t) => t.createdAt), TREND_DAYS);
+  const signupTrend = bucketByDay(recentUsers.map((u) => u.createdAt), TREND_DAYS);
+
   return (
     <div>
       <h1 className="text-2xl font-semibold tracking-tight">Overview</h1>
       <p className="mt-1 text-sm text-muted-foreground">
-        Everyone on the platform and every errand posted, read-only.
+        The platform at a glance. Open the Users or Errands tab for the full lists.
       </p>
 
-      <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         <StatTile label="Posters" value={String(posterCount)} />
         <StatTile label="Runners" value={String(runnerCount)} />
         <StatTile label="Active errands" value={String(activeCount)} />
         <StatTile label="Completed" value={String(completedCount)} />
+        <StatTile label="Bids placed" value={String(bidCount)} />
+        <StatTile label="Completed value" value={formatPrice(completedValue._sum.price ?? 0)} />
       </div>
 
-      <section className="mt-10">
-        <h2 className="font-heading text-lg font-semibold tracking-tight">Users</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Most recently joined first, {RECENT_LIMIT} at a time.
-        </p>
-        {users.length === 0 ? (
-          <EmptyState message="No one has signed up yet." />
-        ) : (
-          <div className="mt-4 overflow-x-auto rounded-lg border border-border">
-            <table className="w-full min-w-[720px] text-left text-sm">
-              <thead>
-                <tr className="border-b border-border bg-secondary text-xs text-muted-foreground">
-                  <Th>Name</Th>
-                  <Th>Email</Th>
-                  <Th>Role</Th>
-                  <Th>Joined</Th>
-                  <Th>Status</Th>
-                  <Th>{""}</Th>
-                </tr>
-              </thead>
-              <tbody>
-                {users.map((user) => (
-                  <tr key={user.id} className="border-b border-border last:border-0">
-                    <Td className="font-medium">{user.name}</Td>
-                    <Td className="text-muted-foreground">{user.email}</Td>
-                    <Td>
-                      {ROLE_LABEL[user.role] ?? user.role}
-                      {user.category ? ` · ${categoryLabel(user.category)}` : ""}
-                    </Td>
-                    <Td className="text-muted-foreground">
-                      <TimeAgo date={user.createdAt} />
-                    </Td>
-                    <Td>
-                      <span
-                        className={
-                          user.isActive
-                            ? "rounded-full bg-accent px-2.5 py-1 text-xs font-medium text-accent-foreground"
-                            : "rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground line-through"
-                        }
-                      >
-                        {user.isActive ? "Active" : "Deactivated"}
-                      </span>
-                    </Td>
-                    <Td>
-                      <DeactivateUserButton userId={user.id} isActive={user.isActive} />
-                    </Td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
+      <div className="mt-8 grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <ChartCard title="Errands by status" subtitle="Where every posted errand stands right now">
+          <HorizontalBarChart data={statusData} />
+        </ChartCard>
 
-      <section className="mt-10">
-        <h2 className="font-heading text-lg font-semibold tracking-tight">Errands</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Most recently posted first, {RECENT_LIMIT} at a time.
-        </p>
-        {tasks.length === 0 ? (
-          <EmptyState message="No errands have been posted yet." />
-        ) : (
-          <div className="mt-4 overflow-x-auto rounded-lg border border-border">
-            <table className="w-full min-w-[640px] text-left text-sm">
-              <thead>
-                <tr className="border-b border-border bg-secondary text-xs text-muted-foreground">
-                  <Th>Title</Th>
-                  <Th>Poster</Th>
-                  <Th>Runner</Th>
-                  <Th>Price</Th>
-                  <Th>Status</Th>
-                  <Th>Posted</Th>
-                </tr>
-              </thead>
-              <tbody>
-                {tasks.map((task) => (
-                  <tr key={task.id} className="border-b border-border last:border-0">
-                    <Td className="max-w-56 truncate font-medium">{task.title}</Td>
-                    <Td className="text-muted-foreground">{task.poster?.name ?? "—"}</Td>
-                    <Td className="text-muted-foreground">{task.runner?.name ?? "—"}</Td>
-                    <Td>{formatPrice(task.price)}</Td>
-                    <Td>
-                      <StatusBadge status={task.status} />
-                    </Td>
-                    <Td className="text-muted-foreground">
-                      <TimeAgo date={task.createdAt} />
-                    </Td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
+        <ChartCard title="Errands by category" subtitle="What people are actually posting for">
+          <HorizontalBarChart data={categoryData} color="var(--primary)" />
+        </ChartCard>
+
+        <ChartCard title="Errands posted" subtitle={`Last ${TREND_DAYS} days`}>
+          <TrendBarChart data={postedTrend} color="var(--primary)" />
+        </ChartCard>
+
+        <ChartCard title="New accounts" subtitle={`Posters and runners, last ${TREND_DAYS} days`}>
+          <TrendBarChart data={signupTrend} color="var(--brand-coral)" />
+        </ChartCard>
+      </div>
     </div>
   );
 }
 
-function Th({ children }: { children: React.ReactNode }) {
-  return <th className="px-4 py-2.5 font-medium">{children}</th>;
-}
-
-function Td({ children, className }: { children: React.ReactNode; className?: string }) {
-  return <td className={`px-4 py-3 align-top ${className ?? ""}`}>{children}</td>;
-}
-
-function EmptyState({ message }: { message: string }) {
+function ChartCard({
+  title,
+  subtitle,
+  children,
+}: {
+  title: string;
+  subtitle: string;
+  children: React.ReactNode;
+}) {
   return (
-    <div className="mt-4 rounded-xl border border-dashed border-border p-8 text-center">
-      <p className="text-sm text-muted-foreground">{message}</p>
+    <div className="rounded-lg border border-border bg-card p-4 sm:p-5">
+      <h2 className="font-heading text-sm font-semibold tracking-tight">{title}</h2>
+      <p className="mt-0.5 text-xs text-muted-foreground">{subtitle}</p>
+      <div className="mt-4">{children}</div>
     </div>
   );
 }

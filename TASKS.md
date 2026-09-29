@@ -357,9 +357,24 @@ own task if actually wanted after trying this.
 
 ## Phase 4: Polish & Deploy
 
-- [x] 4.1 `/admin/dashboard/page.tsx`, read-only users + tasks overview (stat tiles,
-  two tables, empty states, its own loading.tsx). Read-only on purpose, no
-  writes.
+- [x] 4.1 Admin area, read-only besides the one deactivate action (4.2). Grew past
+  a single page (2026-09-29): now four tabs under `admin/layout.tsx`'s nav.
+  **Overview** (`/admin/dashboard`): stat tiles plus four charts (errands by
+  status, by category, errands posted and new accounts over the last 14
+  days), built as small custom SVG bar components
+  (`components/charts/`) rather than a charting dependency, colours reuse
+  the app's own status-colour tokens where the chart is literally showing
+  status, one brand hue elsewhere. **Live** (`/admin/live`): every errand
+  that isn't finished, posted, being negotiated, awarded, or running,
+  polled every 4s, an animated globe header distinct from the runner's own
+  broadcast motif. **Users** (`/admin/users`) and **Errands**
+  (`/admin/tasks`): the two tables that used to share the overview page,
+  now paginated (25/page, `components/pagination-links.tsx`) instead of a
+  flat 50/100-row cap. Both link to detail pages (`/admin/users/[id]`,
+  `/admin/tasks/[id]`): a user's detail reuses `ProfileView` plus
+  confirmed earnings/spend and their errand history; a task's detail shows
+  every bid it received ("negotiations"), not just the winning one, plus
+  ratings and the payment record. Empty states and loading.tsx throughout.
 - [x] 4.2 Admin: deactivate-user boolean flag (`User.isActive`). Blocked at login
   (auth.ts) and enforced mid-session (requireRole.ts sends an already
   signed-in, now-deactivated user to `/signed-out`, which actually clears

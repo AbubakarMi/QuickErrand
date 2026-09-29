@@ -1,6 +1,6 @@
 import type { TaskStatus } from "@prisma/client";
 
-const STATUS_CONFIG: Record<TaskStatus, { label: string; colorVar: string }> = {
+export const STATUS_CONFIG: Record<TaskStatus, { label: string; colorVar: string }> = {
   PENDING: { label: "Pending", colorVar: "--status-pending" },
   ACCEPTED: { label: "Accepted", colorVar: "--status-accepted" },
   IN_PROGRESS: { label: "In progress", colorVar: "--status-in-progress" },

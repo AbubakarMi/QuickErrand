@@ -34,7 +34,13 @@ export function DeactivateUserButton({ userId, isActive }: { userId: string; isA
   if (!isActive) {
     return (
       <div className="flex flex-col items-end gap-1">
-        <Button size="sm" variant="outline" disabled={pending} onClick={() => setActive(true)}>
+        <Button
+          size="sm"
+          variant="outline"
+          disabled={pending}
+          onClick={() => setActive(true)}
+          className="hover:border-primary/40 hover:bg-accent hover:text-accent-foreground"
+        >
           {pending ? "Reactivating…" : "Reactivate"}
         </Button>
         {error && <p className="text-xs text-destructive">{error}</p>}
@@ -59,7 +65,12 @@ export function DeactivateUserButton({ userId, isActive }: { userId: string; isA
   }
 
   return (
-    <Button size="sm" variant="ghost" onClick={() => setConfirming(true)}>
+    <Button
+      size="sm"
+      variant="ghost"
+      onClick={() => setConfirming(true)}
+      className="hover:bg-destructive/10 hover:text-destructive"
+    >
       Deactivate
     </Button>
   );

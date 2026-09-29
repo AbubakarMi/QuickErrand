@@ -9,7 +9,16 @@ export default async function AdminLayout({
   const session = await requireRole("ADMIN");
 
   return (
-    <RoleShell role="ADMIN" userName={session.user.name ?? session.user.email ?? ""}>
+    <RoleShell
+      role="ADMIN"
+      userName={session.user.name ?? session.user.email ?? ""}
+      nav={[
+        { href: "/admin/dashboard", label: "Overview" },
+        { href: "/admin/live", label: "Live" },
+        { href: "/admin/users", label: "Users" },
+        { href: "/admin/tasks", label: "Errands" },
+      ]}
+    >
       {children}
     </RoleShell>
   );
