@@ -23,6 +23,11 @@ model User {
   role         Role     @default(USER)
   createdAt    DateTime @default(now())
 
+  // Admin moderation (TASKS.md 4.2). A deactivated account is blocked at
+  // login and signed out of any session it still holds, see auth.ts and
+  // requireRole.ts, rather than deleted, so its history stays intact.
+  isActive Boolean @default(true)
+
   // Runner-only fields, left null for USER/ADMIN accounts rather than
   // split into a separate RunnerProfile table. A single account can only
   // hold one role (see plan §1), so there's no join to normalize away.

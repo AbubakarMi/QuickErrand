@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { StatTile } from "@/components/stat-tile";
 import { StatusBadge } from "@/components/status-badge";
 import { TimeAgo } from "@/components/time-ago";
+import { DeactivateUserButton } from "@/components/deactivate-user-button";
 import { categoryLabel } from "@/lib/categories";
 import { formatPrice } from "@/lib/formatPrice";
 
@@ -12,9 +13,9 @@ const ROLE_LABEL: Record<string, string> = {
   RUNNER: "Runner",
 };
 
-// Read-only, on purpose: this is a moderation view, not a CRUD panel.
-// Nothing here writes to the database (see TASKS.md 4.1, 4.2 is the
-// stretch goal that would change that).
+// Mostly read-only, this is a moderation view, not a CRUD panel. The one
+// exception is deactivating a user (TASKS.md 4.2), everything else here is
+// display only.
 export default async function AdminDashboardPage() {
   const [userCounts, taskCounts, users, tasks] = await Promise.all([
     prisma.user.groupBy({ by: ["role"], _count: true }),
@@ -23,7 +24,7 @@ export default async function AdminDashboardPage() {
       where: { role: { not: "ADMIN" } },
       orderBy: { createdAt: "desc" },
       take: RECENT_LIMIT,
-      select: { id: true, name: true, email: true, role: true, category: true, createdAt: true },
+      select: { id: true, name: true, email: true, role: true, category: true, createdAt: true, isActive: true },
     }),
     prisma.task.findMany({
       orderBy: { createdAt: "desc" },
@@ -65,13 +66,15 @@ export default async function AdminDashboardPage() {
           <EmptyState message="No one has signed up yet." />
         ) : (
           <div className="mt-4 overflow-x-auto rounded-lg border border-border">
-            <table className="w-full min-w-[520px] text-left text-sm">
+            <table className="w-full min-w-[720px] text-left text-sm">
               <thead>
                 <tr className="border-b border-border bg-secondary text-xs text-muted-foreground">
                   <Th>Name</Th>
                   <Th>Email</Th>
                   <Th>Role</Th>
                   <Th>Joined</Th>
+                  <Th>Status</Th>
+                  <Th>{""}</Th>
                 </tr>
               </thead>
               <tbody>
@@ -85,6 +88,20 @@ export default async function AdminDashboardPage() {
                     </Td>
                     <Td className="text-muted-foreground">
                       <TimeAgo date={user.createdAt} />
+                    </Td>
+                    <Td>
+                      <span
+                        className={
+                          user.isActive
+                            ? "rounded-full bg-accent px-2.5 py-1 text-xs font-medium text-accent-foreground"
+                            : "rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground line-through"
+                        }
+                      >
+                        {user.isActive ? "Active" : "Deactivated"}
+                      </span>
+                    </Td>
+                    <Td>
+                      <DeactivateUserButton userId={user.id} isActive={user.isActive} />
                     </Td>
                   </tr>
                 ))}

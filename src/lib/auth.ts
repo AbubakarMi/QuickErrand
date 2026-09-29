@@ -40,6 +40,11 @@ export const authOptions: NextAuthOptions = {
         );
         if (!passwordMatches) return null;
 
+        // A deactivated account fails the same way as a wrong password:
+        // no separate error message, so a deactivation is never signalled
+        // to someone probing whether an email is registered.
+        if (!user.isActive) return null;
+
         return {
           id: user.id,
           name: user.name,

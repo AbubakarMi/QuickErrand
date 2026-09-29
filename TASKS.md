@@ -360,7 +360,11 @@ own task if actually wanted after trying this.
 - [x] 4.1 `/admin/dashboard/page.tsx`, read-only users + tasks overview (stat tiles,
   two tables, empty states, its own loading.tsx). Read-only on purpose, no
   writes.
-- [ ] 4.2 Admin: deactivate-user boolean flag (stretch, optional)
+- [x] 4.2 Admin: deactivate-user boolean flag (`User.isActive`). Blocked at login
+  (auth.ts) and enforced mid-session (requireRole.ts sends an already
+  signed-in, now-deactivated user to `/signed-out`, which actually clears
+  the session instead of NextAuth's default confirm-and-click page).
+  Reactivating restores access immediately, nothing is deleted.
 - [ ] 4.3 Error handling + form validation (zod) across all mutating routes
 - [x] 4.4a Loading states: `loading.tsx` added for every data-driven signed-in
   route (both dashboards, both task detail pages, history, earnings, both
