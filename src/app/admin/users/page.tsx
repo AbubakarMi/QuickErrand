@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { TimeAgo } from "@/components/time-ago";
 import { DeactivateUserButton } from "@/components/deactivate-user-button";
 import { PaginationLinks } from "@/components/pagination-links";
+import { AdminSearchBox } from "@/components/admin-search-box";
 import { categoryLabel } from "@/lib/categories";
 
 const PAGE_SIZE = 25;
@@ -15,13 +16,24 @@ const ROLE_LABEL: Record<string, string> = {
 export default async function AdminUsersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string }>;
+  searchParams: Promise<{ page?: string; q?: string }>;
 }) {
-  const { page: pageParam } = await searchParams;
+  const { page: pageParam, q } = await searchParams;
   const requested = Number(pageParam);
   const page = Number.isInteger(requested) && requested > 0 ? requested : 1;
+  const query = q?.trim();
 
-  const where = { role: { not: "ADMIN" as const } };
+  const where = {
+    role: { not: "ADMIN" as const },
+    ...(query
+      ? {
+          OR: [
+            { name: { contains: query, mode: "insensitive" as const } },
+            { email: { contains: query, mode: "insensitive" as const } },
+          ],
+        }
+      : {}),
+  };
   const [total, users] = await Promise.all([
     prisma.user.count({ where }),
     prisma.user.findMany({
@@ -36,15 +48,27 @@ export default async function AdminUsersPage({
 
   return (
     <div>
-      <h1 className="text-2xl font-semibold tracking-tight">Users</h1>
-      <p className="mt-1 text-sm text-muted-foreground">
-        Every poster and runner, most recently joined first, {total} in all. Open one for their full profile and history.
-      </p>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Users</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {query
+              ? `${total} match${total === 1 ? "" : "es"} for "${query}".`
+              : `Every poster and runner, most recently joined first, ${total} in all.`}{" "}
+            Open one for their full profile and history.
+          </p>
+        </div>
+        <AdminSearchBox basePath="/admin/users" placeholder="Search by name or email" />
+      </div>
 
       {users.length === 0 ? (
         <div className="mt-6 rounded-xl border border-dashed border-border p-8 text-center">
           <p className="text-sm text-muted-foreground">
-            {total === 0 ? "No one has signed up yet." : "No users on this page."}
+            {total === 0 && !query
+              ? "No one has signed up yet."
+              : query
+                ? `No one matches "${query}".`
+                : "No users on this page."}
           </p>
         </div>
       ) : (
