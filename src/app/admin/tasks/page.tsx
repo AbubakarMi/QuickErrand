@@ -1,8 +1,11 @@
 import Link from "next/link";
+import { TaskStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { StatusBadge } from "@/components/status-badge";
 import { TimeAgo } from "@/components/time-ago";
 import { PaginationLinks } from "@/components/pagination-links";
+import { AdminSearchBox } from "@/components/admin-search-box";
+import { AdminStatusFilter } from "@/components/admin-status-filter";
 import { formatPrice } from "@/lib/formatPrice";
 
 const PAGE_SIZE = 25;
@@ -10,15 +13,30 @@ const PAGE_SIZE = 25;
 export default async function AdminTasksPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string }>;
+  searchParams: Promise<{ page?: string; q?: string; status?: string }>;
 }) {
-  const { page: pageParam } = await searchParams;
+  const { page: pageParam, q, status: statusParam } = await searchParams;
   const requested = Number(pageParam);
   const page = Number.isInteger(requested) && requested > 0 ? requested : 1;
+  const query = q?.trim();
+  const status = statusParam && statusParam in TaskStatus ? (statusParam as TaskStatus) : undefined;
 
+  const where = {
+    ...(status ? { status } : {}),
+    ...(query
+      ? {
+          OR: [
+            { title: { contains: query, mode: "insensitive" as const } },
+            { poster: { name: { contains: query, mode: "insensitive" as const } } },
+            { runner: { name: { contains: query, mode: "insensitive" as const } } },
+          ],
+        }
+      : {}),
+  };
   const [total, tasks] = await Promise.all([
-    prisma.task.count(),
+    prisma.task.count({ where }),
     prisma.task.findMany({
+      where,
       orderBy: { createdAt: "desc" },
       skip: (page - 1) * PAGE_SIZE,
       take: PAGE_SIZE,
@@ -30,18 +48,34 @@ export default async function AdminTasksPage({
     }),
   ]);
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const filtered = Boolean(query || status);
 
   return (
     <div>
-      <h1 className="text-2xl font-semibold tracking-tight">Errands</h1>
-      <p className="mt-1 text-sm text-muted-foreground">
-        Every errand posted, most recent first, {total} in all. Open one for its full detail, including every bid it received.
-      </p>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Errands</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {filtered
+              ? `${total} match${total === 1 ? "" : "es"}.`
+              : `Every errand posted, most recent first, ${total} in all.`}{" "}
+            Open one for its full detail, including every bid it received.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <AdminSearchBox basePath="/admin/tasks" placeholder="Search title, poster, or runner" />
+          <AdminStatusFilter basePath="/admin/tasks" />
+        </div>
+      </div>
 
       {tasks.length === 0 ? (
         <div className="mt-6 rounded-xl border border-dashed border-border p-8 text-center">
           <p className="text-sm text-muted-foreground">
-            {total === 0 ? "No errands have been posted yet." : "No errands on this page."}
+            {total === 0 && !filtered
+              ? "No errands have been posted yet."
+              : filtered
+                ? "Nothing matches that search."
+                : "No errands on this page."}
           </p>
         </div>
       ) : (
