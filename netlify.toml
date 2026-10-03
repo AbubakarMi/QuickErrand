@@ -1,0 +1,11 @@
+# Netlify auto-detects Next.js and applies its Next.js Runtime (the
+# OpenNext-based adapter) with no [[plugins]] block needed, and Netlify's
+# own guidance is to leave the adapter version unpinned so it always
+# builds against the adapter version that matches the Next.js release.
+# This file only pins what Netlify won't infer on its own: the Node
+# version (Next.js 16 requires >=20.9) and the build command.
+[build]
+  command = "npm run build"
+
+[build.environment]
+  NODE_VERSION = "20"
