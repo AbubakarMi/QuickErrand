@@ -38,14 +38,18 @@ export function BidsPanel({
   const router = useRouter();
   const [confirming, setConfirming] = useState<string | null>(null);
   const [countering, setCountering] = useState<string | null>(null);
-  const [pending, setPending] = useState(false);
+  // Which single button, across every bid row, is mid-request, so only
+  // that one spins, the rest just go disabled rather than all appearing
+  // to be doing something at once.
+  const [pendingKey, setPendingKey] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const pending = pendingKey !== null;
 
-  async function run(bidId: string, body: unknown) {
-    setPending(true);
+  async function run(key: string, bidId: string, body: unknown) {
+    setPendingKey(key);
     setError(null);
     const failure = await call(taskId, bidId, body);
-    setPending(false);
+    setPendingKey(null);
     if (failure) {
       setError(failure);
       return;
@@ -105,9 +109,10 @@ export function BidsPanel({
                     <Button
                       size="sm"
                       disabled={pending}
-                      onClick={() => run(bid.id, { action: "AWARD", expectedPrice: bid.price })}
+                      loading={pendingKey === `${bid.id}:award`}
+                      onClick={() => run(`${bid.id}:award`, bid.id, { action: "AWARD", expectedPrice: bid.price })}
                     >
-                      {pending ? "Awarding…" : `Confirm: award to ${bid.runner.name}`}
+                      {`Confirm: award to ${bid.runner.name}`}
                     </Button>
                     <Button size="sm" variant="ghost" disabled={pending} onClick={() => setConfirming(null)}>
                       Cancel
@@ -135,7 +140,10 @@ export function BidsPanel({
                   className="mt-3 flex items-start gap-2"
                   onSubmit={(event) => {
                     event.preventDefault();
-                    run(bid.id, { action: "COUNTER", price: Number(new FormData(event.currentTarget).get("price")) });
+                    run(`${bid.id}:counter`, bid.id, {
+                      action: "COUNTER",
+                      price: Number(new FormData(event.currentTarget).get("price")),
+                    });
                   }}
                 >
                   <input
@@ -149,7 +157,7 @@ export function BidsPanel({
                     placeholder="Your price"
                     className="input h-9 w-36"
                   />
-                  <Button type="submit" size="sm" variant="outline" disabled={pending}>
+                  <Button type="submit" size="sm" variant="outline" disabled={pending} loading={pendingKey === `${bid.id}:counter`}>
                     Send counter
                   </Button>
                 </form>

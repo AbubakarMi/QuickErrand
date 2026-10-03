@@ -97,8 +97,8 @@ export function LoginForm() {
         </div>
       </div>
 
-      <Button type="submit" size="lg" disabled={pending} className="mt-1">
-        {pending ? "Logging in…" : "Log in"}
+      <Button type="submit" size="lg" loading={pending} className="mt-1">
+        Log in
       </Button>
 
       <p className="text-center text-sm text-muted-foreground">

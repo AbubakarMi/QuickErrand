@@ -62,8 +62,8 @@ export function PhoneSettingsForm({ currentPhone }: { currentPhone: string | nul
           className="input h-9 flex-1 text-sm"
           autoFocus
         />
-        <Button type="submit" size="sm" disabled={pending}>
-          {pending ? "Saving…" : "Save"}
+        <Button type="submit" size="sm" loading={pending}>
+          Save
         </Button>
         <Button type="button" size="sm" variant="ghost" onClick={() => setEditing(false)}>
           Cancel

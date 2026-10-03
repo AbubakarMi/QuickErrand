@@ -37,11 +37,11 @@ export function DeactivateUserButton({ userId, isActive }: { userId: string; isA
         <Button
           size="sm"
           variant="outline"
-          disabled={pending}
+          loading={pending}
           onClick={() => setActive(true)}
           className="hover:border-primary/40 hover:bg-accent hover:text-accent-foreground"
         >
-          {pending ? "Reactivating…" : "Reactivate"}
+          Reactivate
         </Button>
         {error && <p className="text-xs text-destructive">{error}</p>}
       </div>
@@ -55,8 +55,8 @@ export function DeactivateUserButton({ userId, isActive }: { userId: string; isA
           <Button size="sm" variant="ghost" disabled={pending} onClick={() => setConfirming(false)}>
             Never mind
           </Button>
-          <Button size="sm" variant="destructive" disabled={pending} onClick={() => setActive(false)}>
-            {pending ? "Deactivating…" : "Confirm"}
+          <Button size="sm" variant="destructive" loading={pending} onClick={() => setActive(false)}>
+            Confirm
           </Button>
         </div>
         {error && <p className="text-xs text-destructive">{error}</p>}

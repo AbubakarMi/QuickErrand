@@ -36,11 +36,11 @@ export function FavoriteButton({ runnerId, initialFavorited }: { runnerId: strin
     <Button
       size="sm"
       variant="outline"
-      disabled={pending}
+      loading={pending}
       onClick={toggle}
       className={cn(favorited && "border-brand-coral/40 bg-brand-coral/10 text-brand-coral hover:bg-brand-coral/15")}
     >
-      <Heart className={cn("size-4", favorited && "fill-brand-coral")} />
+      {!pending && <Heart className={cn("size-4", favorited && "fill-brand-coral")} />}
       {favorited ? "Favorited" : "Save as favorite"}
     </Button>
   );

@@ -75,8 +75,8 @@ export function StartErrandButton({
       <input name="bankName" required placeholder="Bank name" className="input h-9 text-sm" />
       <input name="bankAccountNumber" required placeholder="Account number" className="input h-9 text-sm" />
       {error && <p className="text-xs text-destructive">{error}</p>}
-      <Button type="submit" size="sm" disabled={pending} className="self-start">
-        {pending ? "Saving…" : "Save and start"}
+      <Button type="submit" size="sm" loading={pending} className="self-start">
+        Save and start
       </Button>
     </form>
   );

@@ -48,11 +48,11 @@ export function TaskStatusActionButton({
       <Button
         size="sm"
         variant={variant}
-        disabled={pending}
+        loading={pending}
         onClick={handleClick}
         className={cn(className)}
       >
-        {pending ? "Working…" : children}
+        {children}
       </Button>
       {error && (
         <p className="max-w-48 text-right text-xs text-destructive">{error}</p>

@@ -210,8 +210,8 @@ export function RegisterForm() {
             </p>
           )}
 
-          <Button type="submit" size="lg" disabled={pending} className="mt-1">
-            {pending ? "Creating account…" : "Create account"}
+          <Button type="submit" size="lg" loading={pending} className="mt-1">
+            Create account
           </Button>
 
           {preselectRunner && (

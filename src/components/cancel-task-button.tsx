@@ -63,8 +63,8 @@ export function CancelTaskButton({
         <Button size="sm" variant="ghost" disabled={pending} onClick={() => setOpen(false)}>
           Never mind
         </Button>
-        <Button size="sm" variant="destructive" disabled={pending} onClick={handleConfirm}>
-          {pending ? "Cancelling…" : `Confirm: ${typeof children === "string" ? children.toLowerCase() : "cancel"}`}
+        <Button size="sm" variant="destructive" loading={pending} onClick={handleConfirm}>
+          {`Confirm: ${typeof children === "string" ? children.toLowerCase() : "cancel"}`}
         </Button>
       </div>
       {error && <p className="text-right text-xs text-destructive">{error}</p>}

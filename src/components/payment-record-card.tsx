@@ -64,18 +64,18 @@ export function PaymentRecordCard({
       </ol>
 
       {viewer === "POSTER" && !paidAt && (
-        <Button size="sm" className="mt-4" disabled={pending} onClick={() => act("MARK_PAID")}>
-          {pending ? "Saving…" : "Mark as paid"}
+        <Button size="sm" className="mt-4" loading={pending} onClick={() => act("MARK_PAID")}>
+          Mark as paid
         </Button>
       )}
       {viewer === "RUNNER" && paidAt && !paymentConfirmedAt && (
         <Button
           size="sm"
           className="mt-4"
-          disabled={pending}
+          loading={pending}
           onClick={() => act("CONFIRM_RECEIVED")}
         >
-          {pending ? "Saving…" : "Confirm I received it"}
+          Confirm I received it
         </Button>
       )}
       {error && <p className="mt-2 text-xs text-destructive">{error}</p>}

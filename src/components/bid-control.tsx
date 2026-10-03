@@ -18,10 +18,14 @@ async function call(url: string, method: string, body?: unknown) {
   return (data?.error as string | undefined) ?? "Something went wrong.";
 }
 
+type Action = "bid" | "accept" | "change" | "withdraw" | "submit";
+
 // A runner's side of bidding on an errand, in one control that works in a
 // list row and on the detail page. With no bid: bid the asking price in one
 // tap, or name a different one. With a bid: see it, change or withdraw it,
-// and if the poster countered, accept that.
+// and if the poster countered, accept that. Tracks which action is in
+// flight, not just whether one is, so clicking Withdraw spins only
+// Withdraw, the sibling buttons go disabled but not misleadingly busy too.
 export function BidControl({
   taskId,
   bidId,
@@ -35,14 +39,15 @@ export function BidControl({
 }) {
   const router = useRouter();
   const [editing, setEditing] = useState(false);
-  const [pending, setPending] = useState(false);
+  const [pendingAction, setPendingAction] = useState<Action | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const pending = pendingAction !== null;
 
-  async function run(fn: () => Promise<string | null>) {
-    setPending(true);
+  async function run(action: Action, fn: () => Promise<string | null>) {
+    setPendingAction(action);
     setError(null);
     const failure = await fn();
-    setPending(false);
+    setPendingAction(null);
     if (failure) {
       setError(failure);
       return;
@@ -51,11 +56,15 @@ export function BidControl({
     router.refresh();
   }
 
-  const bid = (price: number) => run(() => call(`/api/tasks/${taskId}/bids`, "POST", { price }));
+  const bid = (price: number) => run("bid", () => call(`/api/tasks/${taskId}/bids`, "POST", { price }));
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    bid(Number(new FormData(event.currentTarget).get("price")));
+    run("submit", () =>
+      call(`/api/tasks/${taskId}/bids`, "POST", {
+        price: Number(new FormData(event.currentTarget).get("price")),
+      }),
+    );
   }
 
   return (
@@ -74,8 +83,9 @@ export function BidControl({
               <Button
                 size="xs"
                 disabled={pending}
+                loading={pendingAction === "accept"}
                 onClick={() =>
-                  run(() => call(`/api/tasks/${taskId}/bids/${bidId}`, "PATCH", { action: "ACCEPT_COUNTER" }))
+                  run("accept", () => call(`/api/tasks/${taskId}/bids/${bidId}`, "PATCH", { action: "ACCEPT_COUNTER" }))
                 }
               >
                 Accept
@@ -90,7 +100,8 @@ export function BidControl({
               size="xs"
               variant="ghost"
               disabled={pending}
-              onClick={() => run(() => call(`/api/tasks/${taskId}/bids`, "DELETE"))}
+              loading={pendingAction === "withdraw"}
+              onClick={() => run("withdraw", () => call(`/api/tasks/${taskId}/bids`, "DELETE"))}
             >
               Withdraw
             </Button>
@@ -98,8 +109,8 @@ export function BidControl({
         </>
       ) : (
         <div className="flex flex-wrap gap-2">
-          <Button size="sm" disabled={pending} onClick={() => bid(askingPrice)}>
-            {pending ? "Bidding…" : `Bid ${formatPrice(askingPrice)}`}
+          <Button size="sm" disabled={pending} loading={pendingAction === "bid"} onClick={() => bid(askingPrice)}>
+            {`Bid ${formatPrice(askingPrice)}`}
           </Button>
           <Button size="sm" variant="outline" disabled={pending} onClick={() => setEditing((v) => !v)}>
             Other price
@@ -120,7 +131,7 @@ export function BidControl({
             placeholder="Your price"
             className="input h-9 w-32"
           />
-          <Button type="submit" size="sm" disabled={pending}>
+          <Button type="submit" size="sm" loading={pendingAction === "submit"}>
             {myBid ? "Update" : "Bid"}
           </Button>
         </form>

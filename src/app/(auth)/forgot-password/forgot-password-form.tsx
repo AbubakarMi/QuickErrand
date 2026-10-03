@@ -64,8 +64,8 @@ export function ForgotPasswordForm() {
           </p>
         )}
 
-        <Button type="submit" size="lg" disabled={resetPending} className="mt-1">
-          {resetPending ? "Saving…" : "Reset password"}
+        <Button type="submit" size="lg" loading={resetPending} className="mt-1">
+          Reset password
         </Button>
       </motion.form>
     );
@@ -100,8 +100,8 @@ export function ForgotPasswordForm() {
         </p>
       )}
 
-      <Button type="submit" size="lg" disabled={findPending} className="mt-1">
-        {findPending ? "Looking…" : "Continue"}
+      <Button type="submit" size="lg" loading={findPending} className="mt-1">
+        Continue
       </Button>
 
       <p className="text-center text-sm text-muted-foreground">

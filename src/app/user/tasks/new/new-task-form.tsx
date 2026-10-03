@@ -157,8 +157,8 @@ export function NewTaskForm() {
         </p>
       )}
 
-      <Button type="submit" size="lg" disabled={pending} className="self-start">
-        {pending ? "Posting…" : "Post errand"}
+      <Button type="submit" size="lg" loading={pending} className="self-start">
+        Post errand
       </Button>
     </form>
   );

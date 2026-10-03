@@ -94,8 +94,8 @@ export function RatingCard({
             className="input h-auto resize-none py-2"
           />
           {error && <p className="text-xs text-destructive">{error}</p>}
-          <Button type="submit" size="sm" className="self-start" disabled={pending}>
-            {pending ? "Saving…" : "Submit rating"}
+          <Button type="submit" size="sm" className="self-start" loading={pending}>
+            Submit rating
           </Button>
         </form>
       )}

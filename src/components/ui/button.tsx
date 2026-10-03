@@ -1,5 +1,6 @@
 import { Button as ButtonPrimitive } from "@base-ui/react/button"
 import { cva, type VariantProps } from "class-variance-authority"
+import { Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const buttonVariantsBase = cva(
@@ -47,18 +48,32 @@ function buttonVariants(props?: Parameters<typeof buttonVariantsBase>[0]) {
   return cn(buttonVariantsBase(props))
 }
 
+// `loading` is the one thing every action button in this app needed and
+// didn't have: a spinner, not just changing text, so a tap reads as
+// "working" the instant it happens rather than however long it takes the
+// label to catch up. Centralized here instead of fourteen separate
+// Loader2-plus-animate-spin blocks. Implies disabled, a loading button is
+// never clickable regardless of what's passed in.
 function Button({
   className,
   variant = "default",
   size = "default",
+  loading = false,
+  disabled,
+  children,
   ...props
-}: ButtonPrimitive.Props & VariantProps<typeof buttonVariants>) {
+}: ButtonPrimitive.Props & VariantProps<typeof buttonVariants> & { loading?: boolean }) {
   return (
     <ButtonPrimitive
       data-slot="button"
+      disabled={disabled || loading}
+      aria-busy={loading || undefined}
       className={cn(buttonVariants({ variant, size, className }))}
       {...props}
-    />
+    >
+      {loading && <Loader2 className="animate-spin" aria-hidden />}
+      {children}
+    </ButtonPrimitive>
   )
 }
 
