@@ -54,6 +54,11 @@ model User {
   notifications    Notification[]
   ratingsGiven     Rating[] @relation("RatingsGiven")
   ratingsReceived  Rating[] @relation("RatingsReceived")
+
+  // A poster bookmarking a runner they'd hire again. One direction only,
+  // a runner doesn't favorite posters, see favorite.ts for why.
+  favoritesGiven    Favorite[] @relation("FavoritesGiven")
+  favoritesReceived Favorite[] @relation("FavoritesReceived")
 }
 
 enum Role {
@@ -193,4 +198,23 @@ model Notification {
   user   User   @relation(fields: [userId], references: [id])
 
   @@index([userId, readAt])
+}
+
+// A poster's saved runner, for a quick "hire them again" without having
+// to remember a name or dig back through history. One-directional: a
+// runner doesn't get a symmetrical list of posters, there's no matching
+// use case for it the way there is for a poster re-hiring someone
+// reliable.
+model Favorite {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  posterId String
+  poster   User   @relation("FavoritesGiven", fields: [posterId], references: [id])
+
+  runnerId String
+  runner   User   @relation("FavoritesReceived", fields: [runnerId], references: [id])
+
+  @@unique([posterId, runnerId])
+  @@index([posterId])
 }
