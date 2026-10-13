@@ -9,6 +9,7 @@ import Link from "next/link";
 import { Radio } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { CategoryFilter } from "@/components/category-filter";
+import { AvailabilityToggle } from "@/components/availability-toggle";
 import { LiveTaskFeed } from "./live-task-feed";
 
 export default async function RunnerDashboardPage({
@@ -25,7 +26,7 @@ export default async function RunnerDashboardPage({
   const session = await getServerSession(authOptions);
   const runner = await prisma.user.findUniqueOrThrow({
     where: { id: session!.user.id },
-    select: { category: true },
+    select: { category: true, isAvailable: true },
   });
 
   const rating = await getUserRating(session!.user.id);
@@ -47,6 +48,9 @@ export default async function RunnerDashboardPage({
             Pick up a task near you.
             <StarRating value={rating.average} count={rating.count} />
           </p>
+          <div className="mt-2">
+            <AvailabilityToggle initialAvailable={runner.isAvailable} />
+          </div>
         </div>
         <div className="flex items-center gap-3">
           <CategoryFilter />
