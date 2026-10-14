@@ -72,12 +72,20 @@ export function BidsPanel({
             <li key={bid.id} className="rounded-lg border border-border bg-background p-3">
               <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
                 <div className="min-w-0">
-                  <Link
-                    href={`/user/profile/${bid.runner.id}`}
-                    className="-my-2 inline-block py-2 font-medium hover:underline"
-                  >
-                    {bid.runner.name}
-                  </Link>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Link
+                      href={`/user/profile/${bid.runner.id}`}
+                      className="-my-2 inline-block py-2 font-medium hover:underline"
+                    >
+                      {bid.runner.name}
+                    </Link>
+                    {bid.runner.isAvailable && (
+                      <span className="flex shrink-0 items-center gap-1 rounded-full bg-accent px-2 py-0.5 text-xs font-medium text-accent-foreground">
+                        <span aria-hidden className="size-1.5 rounded-full bg-primary" />
+                        Available now
+                      </span>
+                    )}
+                  </div>
                   <div className="mt-1">
                     <StarRating value={bid.rating.average} count={bid.rating.count} />
                   </div>

@@ -7,7 +7,7 @@ export type BidView = {
   price: number;
   counterPrice: number | null;
   createdAt: Date | string;
-  runner: { id: string; name: string; category: Category | null };
+  runner: { id: string; name: string; category: Category | null; isAvailable: boolean };
   rating: UserRating;
   completed: number;
 };
@@ -20,7 +20,7 @@ export async function getBidsForPoster(taskId: string): Promise<BidView[]> {
   const bids = await prisma.bid.findMany({
     where: { taskId, status: BidStatus.OPEN },
     orderBy: { createdAt: "asc" },
-    include: { runner: { select: { id: true, name: true, category: true } } },
+    include: { runner: { select: { id: true, name: true, category: true, isAvailable: true } } },
   });
   if (bids.length === 0) return [];
 
